@@ -82,6 +82,7 @@ public class Standard_Calculator extends Application {
 	
 	private double num1 =0, num2 =0, answer =0;
 	private char operator =' ';
+	private boolean addOperator = false;
     
 	public static void main(String[] args) {
 		launch(args);
@@ -402,6 +403,16 @@ public class Standard_Calculator extends Application {
 	
 	private void actionOperator(char op) {
 		double value = Double.parseDouble(current.getText());
+		if (addOperator) {
+			operator = op;
+			num1 = value;
+			if (isUnary && !unaryPrevious.isEmpty()) {
+				progress.setText(unaryPrevious + " " + op);
+			}else {
+				progress.setText(formatNumber(num1) + " " + op);
+			}
+			return;
+		}
 		if (operator == ' ') {
 			num1 = value;
 			
@@ -443,6 +454,7 @@ public class Standard_Calculator extends Application {
 			progress.setText(formatNumber(num1) + " " + op);
 		}
 		waittingForSecondNumber = true;
+		addOperator = true;
 	}
 	
 	private boolean operate() {
@@ -569,6 +581,7 @@ public class Standard_Calculator extends Application {
 			current.setText("0");
 			progress.setText("");
 			calculated = false;
+			addOperator = false;
 		}
 	}
 	private void notOperate() {
@@ -577,6 +590,7 @@ public class Standard_Calculator extends Application {
 		progress.setText(progress.getText());
 		isUnary = false;
 		calculated = true;
+		addOperator = false;
 	}
 	
 	private void actionC() {
@@ -593,6 +607,7 @@ public class Standard_Calculator extends Application {
 		isOperatorEmpty = false;
 		isOperatorDisableOFF = false;
 		waittingForSecondNumber = false;
+		addOperator = false;
 	}
 	
 	private Scene addButtonsIntoRoot() {
@@ -671,6 +686,7 @@ public class Standard_Calculator extends Application {
 		
 		if (waittingForSecondNumber) {
 			current.setText("0");
+			addOperator = false;
 			waittingForSecondNumber  = false;
 		}
 		
