@@ -7,12 +7,31 @@ public class CalculatorModel {
 	private double num2 = 0;
 	private double answer = 0;
 	private char operator = ' ';
+	private boolean addOperator = false;
+	
+	private boolean calculated = false;
 
 	private boolean isOperatorDisableOff = false;
 	
 	private String unaryCurrent = "";
 	private String unaryPrevious = "";
 	private boolean isUnary = false;
+
+	public boolean isAddOperator() {
+		return addOperator;
+	}
+
+	public void setAddOperator(boolean addOperator) {
+		this.addOperator = addOperator;
+	}
+
+	public boolean isCalculated() {
+		return calculated;
+	}
+
+	public void setCalculated(boolean calculated) {
+		this.calculated = calculated;
+	}
 
 	public void operatorDisableOff() {
 		isOperatorDisableOff = true;
