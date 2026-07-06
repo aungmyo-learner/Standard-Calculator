@@ -160,6 +160,8 @@ public class CalculatorUI {
 		// Operator case
 		plus.setOnAction(e->actionOperator('+'));
 		divide.setOnAction(e-> actionOperator('÷'));
+		minus.setOnAction(e-> actionOperator('-'));
+		multiple.setOnAction(e-> actionOperator('x'));
 	}
 	private void btnsPrefSize() {
 		percentage.setPrefSize(65, 65);
@@ -195,13 +197,20 @@ public class CalculatorUI {
 	}
 	
 	private void actionOperator(char op) {
-		String text = service.inputOperation(op, current.getText());
-		progress.setText(text);
+		SolveOperator solve = service.inputOperator(op, current.getText());
+		
+		progress.setText(solve.getProgress());
+		
 		if (service.isOperatorDisableOff()) {
 			operatorDisableOFF();
-			current.setText("Cannot divided by zero");
+			current.setText(solve.getAnswer());
 			return;
 		}
+		
+		if (!solve.getHistory().isEmpty()) {
+			history.getItems().add(0, solve.getHistory());
+		}
+		current.setText(solve.getAnswer());
 	}
 	private void actionCE() {
 		if (progress.getText().contains("=")) {
