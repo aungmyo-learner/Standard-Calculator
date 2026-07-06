@@ -24,6 +24,7 @@ public class CalculatorService {
 		
 		if (model.isWaitSecondNumber()) {
 			currentText = "";
+			model.setAddOperator(false);
 			model.setWaitSecondNumber(false);
 		}
 		if (currentText.equals("0")) {
@@ -36,38 +37,69 @@ public class CalculatorService {
 		return model.isOperatorDisableOff();
 	}
 	
-	public String inputOperation(char op, String text) {
+	public SolveOperator inputOperator(char op, String text) {
 		double value = Double.parseDouble(text);
+
+		String history = "";
+		String progress = "";
+		String answer ="";
+		
+		if (model.isAddOperator()) {
+			model.setOperator(op);
+			model.setNum1(value);
+			
+			if (model.isUnary() && !model.getUnaryPrevious().isEmpty()) {
+				progress = model.getUnaryPrevious() + " " + model.getOperator();
+			}else {
+				progress = formatNumber(value) + " " + op;
+			}
+			
+			answer = formatNumber(value);
+			return new SolveOperator(progress, history, answer);
+		}
 		
 		if (model.getOperator() == ' ') {
 			model.setNum1(value);
 		}else {
 			model.setNum2(value);
 			if (!operate()) {
-				text = formatNumber(model.getNum1()) + " " + model.getOperator() +
+				progress = formatNumber(model.getNum1()) + " " + model.getOperator() +
 						" " + formatNumber(model.getNum2()) + " " + op;
-				
+				answer = "Cannot divided by zero";
 				model.setNum1(0);
 				model.setOperator(' ');
 				model.operatorDisableOff();
 				model.setWaitSecondNumber(true);
 				model.setUnary(false);
-				return text;
+				return new SolveOperator(progress, history, answer);
 			}
+			
+			if (model.isUnary()) {
+				
+				history = model.getUnaryPrevious() + " " +
+						model.getOperator() + " " + 
+						model.getUnaryPrevious() + "=\n" + formatNumber(model.getAnswer());
+				
+				model.setUnary(false);
+				
+			}else {
+				history = formatNumber(model.getNum1()) + " " +
+						model.getOperator() + " " +
+						formatNumber(model.getNum2()) + "=\n" + formatNumber(model.getAnswer());
+			}
+			answer = formatNumber(model.getAnswer());
+			model.setNum1(model.getAnswer());
+			model.setAnswer(0);
+			model.setNum2(0);
 		}
 		
 		model.setOperator(op);
 		model.setWaitSecondNumber(true);
-		return formatNumber(model.getNum1()) + " " + op;
+		model.setAddOperator(true);
+		progress = formatNumber(model.getNum1()) + " " + op;
+		return new SolveOperator(progress, history, answer);
 	}
-	public String backspace(String text) {
-
-		if(text.length() <=1) {
-			return "0";
-		}
-		return text.substring(0, text.length() -1);
-	}
-
+	
 	public String squareRoot(String text) {
 		double value = Double.parseDouble(text);
 		
@@ -84,6 +116,18 @@ public class CalculatorService {
 		model.setUnaryCurrent("\u221A(" + model.getUnaryCurrent() + ")");
 		model.setUnary(true);
 		return formatNumber(result);
+	}
+
+	public boolean isCalculated() {
+		return model.isCalculated();
+	}
+
+	public String backspace(String text) {
+
+		if(text.length() <=1) {
+			return "0";
+		}
+		return text.substring(0, text.length() -1);
 	}
 
 	public String getUnaryCurrent() {
