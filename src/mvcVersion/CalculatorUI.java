@@ -146,17 +146,7 @@ public class CalculatorUI {
 		historyTrash.setOnAction(e-> actionHistoryTrash());
 		
 		// Unary Case
-		squareRoot.setOnAction(e->{
-			String text = service.squareRoot(current.getText());
-			if (text.equals("Invalid input")) {
-				operatorDisableOFF();
-				current.setText(text);
-				progress.setText(service.getUnaryCurrent());
-				return;
-			}
-			current.setText(text);
-			progress.setText(service.showunaryProgress());
-		});
+		squareRoot.setOnAction(e->actionSquareRoot());
 		// Operator case
 		plus.setOnAction(e->actionOperator('+'));
 		divide.setOnAction(e-> actionOperator('÷'));
@@ -187,7 +177,7 @@ public class CalculatorUI {
 			numbers[i] = new Button(String.valueOf(value));
 			numbers[i].setPrefSize(65, 65);
 			numbers[i].setOnAction(e->{
-				if (service.isOperatorDisableOff()) {
+				if (service.isUnaryError() || service.isOperationError()) {
 					operatorDisableOn();
 					progress.setText("");
 				}
@@ -196,21 +186,35 @@ public class CalculatorUI {
 		}
 	}
 	
-	private void actionOperator(char op) {
-		SolveOperator solve = service.inputOperator(op, current.getText());
-		
-		progress.setText(solve.getProgress());
-		
-		if (service.isOperatorDisableOff()) {
+	// Unary Case
+	private void actionSquareRoot() {
+		CalculationResult result = service.clickSquareRoot(current.getText());
+		if (result.isUnaryError()) {
 			operatorDisableOFF();
-			current.setText(solve.getAnswer());
+			current.setText("Invalid input");
+			progress.setText(result.unaryResult());
+			return;
+		}
+		current.setText(result.getResult());
+		progress.setText(result.unaryResult());
+	}
+	
+	private void actionOperator(char op) {
+		CalculationResult result = service.clickOperator(op, current.getText());
+		
+		if (result.isOperationError()) {
+			operatorDisableOFF();
+			current.setText("Cannot divided by zero");
+			progress.setText(result.operationError() + " " + op);
 			return;
 		}
 		
-		if (!solve.getHistory().isEmpty()) {
-			history.getItems().add(0, solve.getHistory());
+		progress.setText(result.operateMovement() + " " + op);
+		current.setText(result.operateMovement());
+		if (result.isOperate()) {
+			history.getItems().add(result.operateResult() + "\n" + result.getResult());
 		}
-		current.setText(solve.getAnswer());
+		
 	}
 	private void actionCE() {
 		if (progress.getText().contains("=")) {
@@ -222,6 +226,7 @@ public class CalculatorUI {
 	private void actionC() {
 		current.setText("0");
 		progress.setText("");
+		service.clickClear();
 	}
 	
 	//History Case
