@@ -9,8 +9,8 @@ import java.util.Map;
 public class CalculatorModel {
 	private boolean waitSecondNumber = false;
 
-	private String operand1 = "";
-	private String operand2 ="";
+	private double operand1 = 0;
+	private double operand2 = 0;
 	private double num1 = 0;
 	private double num2 = 0;
 	private double answer = 0;
@@ -24,21 +24,30 @@ public class CalculatorModel {
 	private boolean unaryError = false;
 	private boolean operationError = false;
 	private Map<DivisionNumber, List<UnaryOperator>> unary = new LinkedHashMap<>();
-	private boolean isUnary = false;
+//	private boolean isUnary = false;
 
-	public String getOperand1() {
+
+	public double getAnswer() {
+		return answer;
+	}
+
+	public void setAnswer(double answer) {
+		this.answer = answer;
+	}
+
+	public double getOperand1() {
 		return operand1;
 	}
 
-	public void setOperand1(String operand1) {
+	public void setOperand1(double operand1) {
 		this.operand1 = operand1;
 	}
 
-	public String getOperand2() {
+	public double getOperand2() {
 		return operand2;
 	}
 
-	public void setOperand2(String operand2) {
+	public void setOperand2(double operand2) {
 		this.operand2 = operand2;
 	}
 
@@ -82,21 +91,13 @@ public class CalculatorModel {
 		this.secondOperator = secondOperator;
 	}
 //
-//	public boolean isHasError() {
-//		return hasError;
+//	public boolean isUnary() {
+//		return isUnary;
 //	}
 //
-//	public void setHasError(boolean hasError) {
-//		this.hasError = hasError;
+//	public void setUnary(boolean isUnary) {
+//		this.isUnary = isUnary;
 //	}
-
-	public boolean isUnary() {
-		return isUnary;
-	}
-
-	public void setUnary(boolean isUnary) {
-		this.isUnary = isUnary;
-	}
 
 	public Map<DivisionNumber, List<UnaryOperator>> getUnary() {
 		return unary.isEmpty()? Map.of(): Collections.unmodifiableMap(unary);
@@ -134,20 +135,12 @@ public class CalculatorModel {
 		this.num2 = num2;
 	}
 
-	public void setAnswer(double answer) {
-		this.answer = answer;
-	}
-
 	public double getNum1() {
 		return num1;
 	}
 
 	public double getNum2() {
 		return num2;
-	}
-
-	public double getAnswer() {
-		return answer;
 	}
 
 	public void setWaitSecondNumber(boolean waitSecondNumber) {
@@ -157,5 +150,33 @@ public class CalculatorModel {
 	public boolean isWaitSecondNumber() {
 		return waitSecondNumber;
 	}
-
+	
+	public void clear() {
+		num1 =0;
+		num2 =0;
+		firstOperator = ' ';
+		secondOperator = ' ';
+		unary.clear();
+		operand1 = 0;
+		operand2 = 0;
+		addOperator = false;
+		calculated = false;
+		isOperate = false;
+		//isUnary = false;
+		unaryError = false;
+		operationError = false;
+	}
+	
+	public void ifOperate() {
+		num1 = answer;
+		answer = 0;
+		num2 = 0;
+		firstOperator = secondOperator;
+		operand1 = 0;
+		operand2 = 0;
+		secondOperator = ' ';
+		unary.clear();
+		isOperate = false;
+		//isUnary = false;
+	}
 }
