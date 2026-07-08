@@ -13,7 +13,8 @@ public class CalculatorMain extends Application {
 	public void start(Stage st) throws Exception {
 		CalculatorModel model = new CalculatorModel();
 		CalculatorService service = new CalculatorService(model);
-		CalculatorUI ui = new CalculatorUI(service);
+		CalculatorFormatter formatter = new CalculatorFormatter();
+		CalculatorUI ui = new CalculatorUI(service, formatter);
 		ui.start(st);
 	}
 }
