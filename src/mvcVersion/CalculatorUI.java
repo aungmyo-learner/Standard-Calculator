@@ -16,9 +16,10 @@ import javafx.stage.Stage;
 public class CalculatorUI {
 
 	private final CalculatorService service;
-	
-	public CalculatorUI(CalculatorService service) {
+	private final CalculatorFormatter formatter;
+	public CalculatorUI(CalculatorService service, CalculatorFormatter formatter) {
 		this.service = service;
+		this.formatter = formatter;
 	}
 
 	private Button percentage = new Button("%");
@@ -189,30 +190,30 @@ public class CalculatorUI {
 	// Unary Case
 	private void actionSquareRoot() {
 		CalculationResult result = service.clickSquareRoot(current.getText());
+		
+		UnaryPresenter presenter = formatter.unaryPresent(result);
+		
 		if (result.isUnaryError()) {
 			operatorDisableOFF();
-			current.setText("Invalid input");
-			progress.setText(result.unaryResult());
-			return;
 		}
-		current.setText(result.getResult());
-		progress.setText(result.unaryResult());
+		current.setText(presenter.getCurrentText());
+		progress.setText(presenter.getProgressText());
 	}
 	
 	private void actionOperator(char op) {
-		CalculationResult result = service.clickOperator(op, current.getText());
 		
+		CalculationResult result = service.clickOperator(op, current.getText());
+		OperatorPresenter presenter = formatter.operatePresent(result);
 		if (result.isOperationError()) {
 			operatorDisableOFF();
-			current.setText("Cannot divided by zero");
-			progress.setText(result.operationError() + " " + op);
+			progress.setText(presenter.getProgressText() + " " + op);
 			return;
 		}
 		
-		progress.setText(result.operateMovement() + " " + op);
-		current.setText(result.operateMovement());
+		progress.setText(presenter.getProgressText());
+		current.setText(presenter.getCurrentText());
 		if (result.isOperate()) {
-			history.getItems().add(result.operateResult() + "\n" + result.getResult());
+			history.getItems().add(presenter.getHistoryText());
 		}
 		
 	}
