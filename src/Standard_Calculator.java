@@ -94,6 +94,7 @@ public class Standard_Calculator extends Application {
 		Scene sc = addButtonsIntoRoot();
 		clickProgress(sc);
 		st.setScene(sc);
+		st.setResizable(false);
 		st.setTitle("Standard Calculator");
 		st.show();
 		
