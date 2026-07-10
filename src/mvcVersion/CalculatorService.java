@@ -7,36 +7,37 @@ public class CalculatorService {
 		this.model = model;
 	}
 	
-	private String formatNumber(double num){
-        if(num == (long) num){
-            return String.valueOf((long) num);
-        }
-        return String.valueOf(num);
-    }
-	
-	public String inputNumber(String currentText, int value) {
+	public NumberResult inputNumber(String currentText, int value) {
 		return number(currentText, value);
 	}
 	
-	private String number(String currentText, int value) {
-		
+	private NumberResult number(String currentText, int value) {
+
+		if (model.isUnaryError() || model.isOperationError()) {
+			model.clear();
+		}
+
+		if (model.isOperate()) {
+			model.ifOperate();
+		}
+
 		if (model.isWaitSecondNumber()) {
 			currentText = "";
 			model.setAddOperator(false);
 			model.setWaitSecondNumber(false);
 		}
-		if (model.isOperate()) {
-			model.ifOperate();
-		}
-		
-		if (model.isUnaryError() || model.isOperationError()) {
-			model.clear();
-		}
 		
 		if (currentText.equals("0")) {
-			return formatNumber(value);
+			return new NumberResult(currentText, value, false, model.getUnary(), model.getOperand1(),
+					 true, model.isUnaryError(), model.isOperationError(), DivisionNumber.FIRST);
 		}
-		return currentText + formatNumber(value);
+		
+		if(model.getUnary().containsKey(DivisionNumber.FIRST) && model.getFirstOperator() == ' ') {
+			return new NumberResult(currentText, value, true, model.getUnary(), model.getOperand1(),
+					false, model.isUnaryError(), model.isOperationError(), DivisionNumber.FIRST);
+		}
+		return new NumberResult(currentText, value, false, model.getUnary(),model.getOperand1(),
+				false, model.isUnaryError(), model.isOperationError(), DivisionNumber.FIRST);
 	}
 
 	public boolean isUnaryError() {
@@ -46,10 +47,7 @@ public class CalculatorService {
 	public boolean isOperationError() {
 		return model.isOperationError();
 	}
-//	
-//	public boolean isAddOperator() {
-//		return model.isAddOperator();
-//	}
+	
 	public void clickClear() {
 		model.clear();
 	}
@@ -73,37 +71,81 @@ public class CalculatorService {
 				return new CalculationResult(model.getOperand1(),model.getOperand2(), model.getNum1(),
 						model.getNum2(), model.getFirstOperator(), model.getSecondOperator(),
 						model.getUnary(), 0, model.isAddOperator(),
-						model.isUnaryError(), model.isOperationError(), model.isOperate());
+						model.isUnaryError(), model.isOperationError(), model.isOperate(), model.getUnaryErrorOperator());
 			}
 			model.setNum2(value);
 			if (!operate()) {
 				model.setWaitSecondNumber(true);
-				
+				model.setSecondOperator(op);
+				model.setOperationError(true);
 				return new CalculationResult(model.getOperand1(),model.getOperand2(), model.getNum1(),
 						model.getNum2(), model.getFirstOperator(), model.getSecondOperator(),
 						model.getUnary(), 0, model.isAddOperator(),
-						model.isUnaryError(), model.isOperationError(), model.isOperate());
+						model.isUnaryError(), model.isOperationError(), model.isOperate(), model.getUnaryErrorOperator());
 				
 			}
-			
 			model.setSecondOperator(op);
 			model.setOperate(true);
 		}
-		
+		model.setUnaryErrorOperator(UnaryOperator.NOUNARY);
 		model.setWaitSecondNumber(true);
 		model.setAddOperator(true);
-		System.out.println("Answer: " + model.getAnswer());
-		System.out.println("Operand2: " + model.getOperand2());
+		
 		return new CalculationResult(model.getOperand1(),model.getOperand2(), model.getNum1(),
 				model.getNum2(), model.getFirstOperator(), model.getSecondOperator(),
 				model.getUnary(), model.getAnswer(), model.isAddOperator(),
-				model.isUnaryError(), model.isOperationError(), model.isOperate());
+				model.isUnaryError(), model.isOperationError(), model.isOperate(), model.getUnaryErrorOperator());
 	}
-//	
-//	public CalculationResult inputInverse(String text) {
-//		return inverse(text);
-//	}
-//	
+	
+	public CalculationResult clickSQR(String text) {
+		return sqr(text);
+	}
+	
+	private CalculationResult sqr(String text) {
+		model.setAddOperator(false);
+		double value = Double.parseDouble(text);
+		if (model.isOperate()) {
+			model.ifOperate();
+		}
+		UnaryOperator sqr = UnaryOperator.SQR;
+		UnaryResult result = sqr.calculate(value);
+		if (model.getFirstOperator() == ' ') {
+			DivisionNumber first = DivisionNumber.FIRST;
+
+			if (!model.getUnary().containsKey(first)) {
+				model.setOperand1(value);
+			}
+			
+			model.addUnary(first, sqr);
+			
+			if (result.error()) {
+				return unaryError(value, sqr);
+			}
+			model.setNum1(result.result());
+			
+		}else {
+			DivisionNumber second = DivisionNumber.SECOND;
+
+			if (!model.getUnary().containsKey(second)) {
+				model.setOperand2(value);
+			}
+			
+			model.addUnary(second, sqr);
+			
+			if (result.error()) {
+				return unaryError(value, sqr);
+			}
+			
+			model.setNum2(result.result());
+		}
+		
+		return UnaryResult(result.result());
+	}
+	
+	public CalculationResult clickInverse(String text) {
+		return inverse(text);
+	}
+	
 //	public void ifCalculated() {
 //		if (model.isCalculated()) {
 //			model.setNum1(0);
@@ -116,24 +158,48 @@ public class CalculatorService {
 //			model.setAddOperator(false);
 //		}
 //	}
-//	private CalculationResult  inverse(String text) {
-//		double value = Double.parseDouble(text);
-//		
-//		if(value == 0) {
-//			return new CalculationResult(formatNumber(value), "", ' ', List.of(),false, false, "", false, true);
-//		}
-//		
-//		double answer = 1.0/value;
-//		String result = formatNumber(answer);
-//		UnaryOperator unary = UnaryOperator.INVERSE;
-//		model.addUnary(unary);
-//		if (model.getOperator() == ' ') {
-//			model.setFirstUnary(true);
-//		}else {
-//			model.setSecondUnary(true);
-//		}
-//	}
-//	
+	
+	private CalculationResult  inverse(String text) {
+		model.setAddOperator(false);
+		double value = Double.parseDouble(text);
+		if (model.isOperate()) {
+			model.ifOperate();
+		}
+		UnaryOperator inverse = UnaryOperator.INVERSE;
+		UnaryResult result = inverse.calculate(value);
+		if (model.getFirstOperator() == ' ') {
+			DivisionNumber first = DivisionNumber.FIRST;
+
+			if (!model.getUnary().containsKey(first)) {
+				model.setOperand1(value);
+			}
+			
+			model.addUnary(first, inverse);
+			
+			if (result.error()) {
+				return unaryError(value, inverse);
+			}
+			model.setNum1(result.result());
+			
+		}else {
+			DivisionNumber second = DivisionNumber.SECOND;
+
+			if (!model.getUnary().containsKey(second)) {
+				model.setOperand2(value);
+			}
+			
+			model.addUnary(second, inverse);
+			
+			if (result.error()) {
+				return unaryError(value, inverse);
+			}
+			
+			model.setNum2(result.result());
+		}
+		
+		return UnaryResult(result.result());
+	}
+	
 	public CalculationResult clickSquareRoot(String text) {
 		return squareRoot(text);
 	}
@@ -144,47 +210,53 @@ public class CalculatorService {
 		if (model.isOperate()) {
 			model.ifOperate();
 		}
+		UnaryOperator sqrt = UnaryOperator.SQRT;
+		UnaryResult result = sqrt.calculate(value);
+		
 		if (model.getFirstOperator() == ' ') {
 			DivisionNumber first = DivisionNumber.FIRST;
-			UnaryOperator sqrt = UnaryOperator.SQRT;
-			model.addUnary(first, sqrt);
-			if (model.getUnary().isEmpty()) {
+			if (!model.getUnary().containsKey(first)) {
 				model.setOperand1(value);
 			}
+			model.addUnary(first, sqrt);
 			
-			if(value <0) {
-				model.setUnaryError(true);
-				return new CalculationResult(model.getOperand1(),model.getOperand2(), model.getNum1(),
-						model.getNum2(), model.getFirstOperator(), model.getSecondOperator(),
-						model.getUnary(), value, model.isAddOperator(),
-						model.isUnaryError(), model.isOperationError(), model.isOperate());
+			
+			if (result.error()) {
+				return unaryError(value, sqrt);
 			}
-			
-			model.setNum1(Math.sqrt(value));
+			model.setNum1(result.result());
 		}else {
 			DivisionNumber second = DivisionNumber.SECOND;
-			UnaryOperator sqrt = UnaryOperator.SQRT;
+
+			if (!model.getUnary().containsKey(second)) {
+				model.setOperand2(value);
+			}
+			
 			model.addUnary(second, sqrt);
-			if (!model.getUnary().isEmpty()) {
-				model.setOperand2(value);
+			
+			if (result.error()) {
+				return unaryError(value, sqrt);
 			}
-			System.out.println("operand2: " + model.getOperand2());
-			if(value <0) {
-				value = -value;
-				model.setOperand2(value);
-				model.setUnaryError(true);
-				return new CalculationResult(model.getOperand1(),model.getOperand2(), model.getNum1(),
-						model.getNum2(), model.getFirstOperator(), model.getSecondOperator(),
-						model.getUnary(), value, model.isAddOperator(),
-						model.isUnaryError(), model.isOperationError(), model.isOperate());
-			}
-			model.setNum2(Math.sqrt(value));
+			
+			model.setNum2(result.result());
 		}
-		double result = Math.sqrt(value);
+		return UnaryResult(result.result());
+	}
+	
+	private CalculationResult UnaryResult(double result) {
+		model.setUnaryErrorOperator(UnaryOperator.NOUNARY);
 		return new CalculationResult(model.getOperand1(),model.getOperand2(), model.getNum1(),
 				model.getNum2(), model.getFirstOperator(), model.getSecondOperator(),
 				model.getUnary(), result, model.isAddOperator(),
-				model.isUnaryError(), model.isOperationError(), model.isOperate());
+				model.isUnaryError(), model.isOperationError(), model.isOperate(), model.getUnaryErrorOperator());
+	}
+	private CalculationResult unaryError(double value,UnaryOperator unary) {
+		model.setUnaryError(true);
+		model.setUnaryErrorOperator(unary);
+		return new CalculationResult(model.getOperand1(),model.getOperand2(), model.getNum1(),
+				model.getNum2(), model.getFirstOperator(), model.getSecondOperator(),
+				model.getUnary(), value, model.isAddOperator(),
+				model.isUnaryError(), model.isOperationError(), model.isOperate(), model.getUnaryErrorOperator());
 	}
 
 	public boolean isCalculated() {
