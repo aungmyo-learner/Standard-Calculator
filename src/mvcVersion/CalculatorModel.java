@@ -24,8 +24,15 @@ public class CalculatorModel {
 	private boolean unaryError = false;
 	private boolean operationError = false;
 	private Map<DivisionNumber, List<UnaryOperator>> unary = new LinkedHashMap<>();
-//	private boolean isUnary = false;
+	private UnaryOperator unaryErrorOperator = UnaryOperator.NOUNARY;
 
+	public UnaryOperator getUnaryErrorOperator() {
+		return unaryErrorOperator;
+	}
+
+	public void setUnaryErrorOperator(UnaryOperator unaryErrorOperator) {
+		this.unaryErrorOperator = unaryErrorOperator;
+	}
 
 	public double getAnswer() {
 		return answer;
@@ -90,15 +97,7 @@ public class CalculatorModel {
 	public void setSecondOperator(char secondOperator) {
 		this.secondOperator = secondOperator;
 	}
-//
-//	public boolean isUnary() {
-//		return isUnary;
-//	}
-//
-//	public void setUnary(boolean isUnary) {
-//		this.isUnary = isUnary;
-//	}
-
+	
 	public Map<DivisionNumber, List<UnaryOperator>> getUnary() {
 		return unary.isEmpty()? Map.of(): Collections.unmodifiableMap(unary);
 	}
@@ -162,7 +161,6 @@ public class CalculatorModel {
 		addOperator = false;
 		calculated = false;
 		isOperate = false;
-		//isUnary = false;
 		unaryError = false;
 		operationError = false;
 	}
@@ -177,6 +175,5 @@ public class CalculatorModel {
 		secondOperator = ' ';
 		unary.clear();
 		isOperate = false;
-		//isUnary = false;
 	}
 }
