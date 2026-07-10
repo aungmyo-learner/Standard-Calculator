@@ -72,6 +72,7 @@ public class CalculatorUI {
 		clickProgress(sc);
 		st.setScene(sc);
 		st.setTitle("Standard Calculator");
+		st.setResizable(false);
 		st.show();
 		
 	}
@@ -148,6 +149,8 @@ public class CalculatorUI {
 		
 		// Unary Case
 		squareRoot.setOnAction(e->actionSquareRoot());
+		inverse.setOnAction(e-> actionInverse());
+		superscript.setOnAction(e-> actionSQR());
 		// Operator case
 		plus.setOnAction(e->actionOperator('+'));
 		divide.setOnAction(e-> actionOperator('÷'));
@@ -178,11 +181,20 @@ public class CalculatorUI {
 			numbers[i] = new Button(String.valueOf(value));
 			numbers[i].setPrefSize(65, 65);
 			numbers[i].setOnAction(e->{
-				if (service.isUnaryError() || service.isOperationError()) {
+				
+				NumberResult result = service.inputNumber(current.getText(), value);
+				NumberPresenter presenter = formatter.numberPresent(result);
+				
+				if (result.unaryErro() || result.operationError()) {
 					operatorDisableOn();
 					progress.setText("");
 				}
-				current.setText(service.inputNumber(current.getText(), value));
+				
+				if (result.unaryHistory()) {
+					history.getItems().add(0, presenter.history());
+				}
+				
+				current.setText(presenter.current());
 			});
 		}
 	}
@@ -190,33 +202,49 @@ public class CalculatorUI {
 	// Unary Case
 	private void actionSquareRoot() {
 		CalculationResult result = service.clickSquareRoot(current.getText());
-		
-		UnaryPresenter presenter = formatter.unaryPresent(result);
-		
-		if (result.isUnaryError()) {
-			operatorDisableOFF();
-		}
-		current.setText(presenter.getCurrentText());
-		progress.setText(presenter.getProgressText());
+		presenter(result);
 	}
 	
+	private void actionInverse() {
+		CalculationResult result = service.clickInverse(current.getText());
+		presenter(result);
+	}
+	
+	private void actionSQR() {
+		CalculationResult result = service.clickSQR(current.getText());
+		presenter(result);		
+	}
+	
+	private void presenter(CalculationResult result) {
+		UnaryPresenter presenter = formatter.unaryPresent(result);
+		
+		if (result.unaryError()) {
+			operatorDisableOFF();
+		}
+		current.setText(presenter.currentText());
+		progress.setText(presenter.progressText());
+	}
+	// Operator case
 	private void actionOperator(char op) {
 		
 		CalculationResult result = service.clickOperator(op, current.getText());
 		OperatorPresenter presenter = formatter.operatePresent(result);
-		if (result.isOperationError()) {
+		if (result.operationError()) {
 			operatorDisableOFF();
-			progress.setText(presenter.getProgressText() + " " + op);
+			progress.setText(presenter.progressText());
+			current.setText(presenter.currentText());
 			return;
 		}
 		
-		progress.setText(presenter.getProgressText());
-		current.setText(presenter.getCurrentText());
-		if (result.isOperate()) {
-			history.getItems().add(presenter.getHistoryText());
+		progress.setText(presenter.progressText());
+		current.setText(presenter.currentText());
+		if (result.operate()) {
+			history.getItems().add(presenter.historyText());
 		}
 		
 	}
+	
+	// clear case
 	private void actionCE() {
 		if (progress.getText().contains("=")) {
 			progress.setText("");
@@ -225,6 +253,7 @@ public class CalculatorUI {
 	}
 
 	private void actionC() {
+		operatorDisableOn();
 		current.setText("0");
 		progress.setText("");
 		service.clickClear();
