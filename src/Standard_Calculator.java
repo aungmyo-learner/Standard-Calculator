@@ -529,7 +529,7 @@ public class Standard_Calculator extends Application {
 			}else {
 				
 				if (calculated) {
-					num1 = Double.parseDouble(current.getText());
+					num1 = value;
 					if (!operate()) {
 						notOperate();
 						return;
@@ -697,6 +697,11 @@ public class Standard_Calculator extends Application {
 			history.getItems().add(0, unaryCurrent + " =\n" + current.getText());
 			current.setText("0");
 			unaryCurrent ="";
+			isUnary = false;
+		}
+		
+		if (operator != ' ' && isUnary) {
+			progress.setText(formatNumber(num1) + " " + operator);
 			isUnary = false;
 		}
 		
