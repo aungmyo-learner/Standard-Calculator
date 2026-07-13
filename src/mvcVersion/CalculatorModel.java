@@ -17,17 +17,52 @@ public class CalculatorModel {
 	private char firstOperator = ' ';
 	private char secondOperator = ' ';
 	private boolean addOperator = false;
-	
-	private boolean calculated = false;
+	private InputState inputState = InputState.NORMAL;
+	private boolean equaled = false;
 	private boolean isOperate = false;
-
+	private boolean unaryHistory = false;
 	private boolean unaryError = false;
 	private boolean operationError = false;
 	private Map<DivisionNumber, List<UnaryOperator>> unary = new LinkedHashMap<>();
 	private UnaryOperator unaryErrorOperator = UnaryOperator.NOUNARY;
+	private OperationState operationState = OperationState.NORMAL;
+	private UnaryState unaryState = UnaryState.NORMAL;
+	
+	
+	public UnaryState getUnaryState() {
+		return unaryState;
+	}
+
+	public void setUnaryState(UnaryState unaryState) {
+		this.unaryState = unaryState;
+	}
+
+	public InputState getInputState() {
+		return inputState;
+	}
+
+	public void setInputState(InputState inputState) {
+		this.inputState = inputState;
+	}
+
+	public OperationState getOperationState() {
+		return operationState;
+	}
+
+	public void setOperationState(OperationState operationState) {
+		this.operationState = operationState;
+	}
 
 	public UnaryOperator getUnaryErrorOperator() {
 		return unaryErrorOperator;
+	}
+
+	public boolean isUnaryHistory() {
+		return unaryHistory;
+	}
+
+	public void setUnaryHistory(boolean unaryHistory) {
+		this.unaryHistory = unaryHistory;
 	}
 
 	public void setUnaryErrorOperator(UnaryOperator unaryErrorOperator) {
@@ -101,11 +136,9 @@ public class CalculatorModel {
 	public Map<DivisionNumber, List<UnaryOperator>> getUnary() {
 		return unary.isEmpty()? Map.of(): Collections.unmodifiableMap(unary);
 	}
-	
-	public void setUnary(Map<DivisionNumber, List<UnaryOperator>> unary) {
-		this.unary = unary;
+	public void clearUnary() {
+		unary.clear();
 	}
-
 	public void addUnary(DivisionNumber count, UnaryOperator unary) {
 		this.unary.computeIfAbsent(count, c-> new LinkedList<>()).add(unary);
 	}
@@ -118,12 +151,12 @@ public class CalculatorModel {
 		this.addOperator = addOperator;
 	}
 
-	public boolean isCalculated() {
-		return calculated;
+	public boolean isEqualed() {
+		return equaled;
 	}
 
-	public void setCalculated(boolean calculated) {
-		this.calculated = calculated;
+	public void setEqualed(boolean equaled) {
+		this.equaled = equaled;
 	}
 
 	public void setNum1(double num1) {
@@ -158,8 +191,11 @@ public class CalculatorModel {
 		unary.clear();
 		operand1 = 0;
 		operand2 = 0;
+		inputState = InputState.NORMAL;
+		operationState = OperationState.NORMAL;
+		unaryState = UnaryState.NORMAL;
 		addOperator = false;
-		calculated = false;
+		equaled = false;
 		isOperate = false;
 		unaryError = false;
 		operationError = false;
@@ -175,5 +211,8 @@ public class CalculatorModel {
 		secondOperator = ' ';
 		unary.clear();
 		isOperate = false;
+	}
+	public void removeUnary(DivisionNumber num) {
+		unary.remove(num);
 	}
 }
