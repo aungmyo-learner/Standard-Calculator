@@ -137,6 +137,7 @@ public class CalculatorUI {
 		c.setOnAction(e-> actionC());
 		ce.setOnAction(e->actionCE());
 		backspace.setOnAction(e->current.setText(service.backspace(current.getText())));
+		equal.setOnAction(e-> actionEqual());
 		
 		//Memory case
 		memoryClear.setOnAction(e->actionMemoryClear());
@@ -183,18 +184,17 @@ public class CalculatorUI {
 			numbers[i].setOnAction(e->{
 				
 				NumberResult result = service.inputNumber(current.getText(), value);
-				NumberPresenter presenter = formatter.numberPresent(result);
+				Presenter presenter = formatter.numberPresent(result);
 				
-				if (result.unaryErro() || result.operationError()) {
-					operatorDisableOn();
-					progress.setText("");
+				if (result.operationState() == OperationState.ERROR) {
+					operatorEnable();
 				}
 				
-				if (result.unaryHistory()) {
-					history.getItems().add(0, presenter.history());
+				if (result.unaryState() == UnaryState.AFTER_UNARY && result.operator() == ' ') {
+					history.getItems().add(0, presenter.historyText() + "\n" + result.current());
 				}
-				
-				current.setText(presenter.current());
+				progress.setText(presenter.progressText());
+				current.setText(presenter.currentText());
 			});
 		}
 	}
@@ -203,34 +203,41 @@ public class CalculatorUI {
 	private void actionSquareRoot() {
 		CalculationResult result = service.clickSquareRoot(current.getText());
 		presenter(result);
+		updateHistoryTrashButton();
 	}
 	
 	private void actionInverse() {
 		CalculationResult result = service.clickInverse(current.getText());
 		presenter(result);
+		updateHistoryTrashButton();
 	}
 	
 	private void actionSQR() {
 		CalculationResult result = service.clickSQR(current.getText());
-		presenter(result);		
+		presenter(result);
+		updateHistoryTrashButton();
 	}
 	
 	private void presenter(CalculationResult result) {
-		UnaryPresenter presenter = formatter.unaryPresent(result);
+		Presenter presenter = formatter.unaryPresent(result);
 		
 		if (result.unaryError()) {
-			operatorDisableOFF();
+			operatorDisable();
 		}
 		current.setText(presenter.currentText());
 		progress.setText(presenter.progressText());
+	}
+	
+	public void actionPercentage() {
+		
 	}
 	// Operator case
 	private void actionOperator(char op) {
 		
 		CalculationResult result = service.clickOperator(op, current.getText());
-		OperatorPresenter presenter = formatter.operatePresent(result);
+		Presenter presenter = formatter.operatePresent(result);
 		if (result.operationError()) {
-			operatorDisableOFF();
+			operatorDisable();
 			progress.setText(presenter.progressText());
 			current.setText(presenter.currentText());
 			return;
@@ -239,21 +246,38 @@ public class CalculatorUI {
 		progress.setText(presenter.progressText());
 		current.setText(presenter.currentText());
 		if (result.operate()) {
-			history.getItems().add(presenter.historyText());
+			history.getItems().add(presenter.historyText() + "\n" + presenter.currentText());
 		}
-		
+		updateHistoryTrashButton();
 	}
 	
+	// equal case
+	private void actionEqual() {
+		EqualResult result = service.clickEqual(current.getText());
+		Presenter presenter = formatter.equalPresent(result);
+		current.setText(presenter.currentText());
+		if (result.error()) {
+			operatorDisable();
+			progress.setText(presenter.progressText());
+			return;
+		}
+		progress.setText(presenter.progressText());
+		history.getItems().add(presenter.progressText() + "\n" + presenter.currentText());
+	}
 	// clear case
 	private void actionCE() {
-		if (progress.getText().contains("=")) {
+		operatorEnable();
+		if (progress.getText().contains("=") ||
+				current.getText().equalsIgnoreCase("Cannot divided by zero") ||
+				current.getText().equalsIgnoreCase("Invalid input") ||
+				current.getText().equalsIgnoreCase("Inifity")) {
 			progress.setText("");
 		}
 		current.setText("0");
 	}
 
 	private void actionC() {
-		operatorDisableOn();
+		operatorEnable();
 		current.setText("0");
 		progress.setText("");
 		service.clickClear();
@@ -315,7 +339,7 @@ public class CalculatorUI {
 		updateMemoryTrashButton();
 	}
 
-	private void operatorDisableOFF() {
+	private void operatorDisable() {
 		plus.setDisable(true);
 		minus.setDisable(true);
 		multiple.setDisable(true);
@@ -328,7 +352,7 @@ public class CalculatorUI {
 		decimal.setDisable(true);
 	}
 	
-	private void operatorDisableOn() {
+	private void operatorEnable() {
 		plus.setDisable(false);
 		minus.setDisable(false);
 		multiple.setDisable(false);
