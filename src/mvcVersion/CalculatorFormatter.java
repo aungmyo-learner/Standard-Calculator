@@ -18,43 +18,58 @@ public class CalculatorFormatter{
 	}
 	
 	private String equalCurrentText(EqualResult result) {
-		if (result.zero() && result.operator() == ' ') {
-			return "0";
-		}
-		if (result.error()) {
+
+		if (result.operationState() == OperationState.ERROR) {
 			return "Cannot divided by zero";
 		}
 //		if (!result.unary().isEmpty() && result.operator() == ' ') {
 //			return formatNumber(result.num1());
 //		}
-		if (result.operate()) {
+		if (result.operationState() == OperationState.SUCCESS) {
 			return formatNumber(result.reslt());
 		}
 		return formatNumber(result.num1());
 	}
 	
 	private String equalProgressText(EqualResult result) {
-		if (result.zero() && result.operator() == ' ') {
-			return "0=";
+		if (result.operationState() == OperationState.NORMAL && result.operator() == ' ') {
+			return formatNumber(result.reslt());
 		}
 
-		if (result.error()) {
+		if (result.operationState() == OperationState.ERROR) {
 			return formatNumber(result.num1()) + " " + result.operator();
 		}
 		
 		if (result.operator() == ' ') {
-			if (!result.unary().isEmpty()) {
-				return getOperandString(result.unary(), formatNumber(result.operand1()), DivisionNumber.FIRST) + " =";
+			if (result.unaryPositon() == UnaryPositon.FIRST) {
+				return getOperandString(result.unary(), formatNumber(result.operand1()), result.unaryPositon()) + " =";
 			}else {
 				return formatNumber(result.num1()) + " =";
 			}
 		}
 		
-		return historyText(formatNumber(result.operand1()), formatNumber(result.operand2()),
-				result.unary(), formatNumber(result.num1()), formatNumber(result.num2()), result.operator());
+		return equalUnaryProgressText(result);
 		
 	}
 	
+	private String equalUnaryProgressText(EqualResult result) {
+
+		String firstOperand = "";
+		String secondOperand = "";
+		secondOperand = getOperandString(result.unary(), formatNumber(result.operand2()), UnaryPositon.SECOND);
+		firstOperand = getOperandString(result.unary(), formatNumber(result.operand1()), UnaryPositon.FIRST);
+		if (result.unaryPositon() == UnaryPositon.FIRST) {
+			
+			return firstOperand + " " + result.operator() + " " + formatNumber(result.num2()) + " =";
+		}
+		
+		if (result.unaryPositon() == UnaryPositon.SECOND) {
+			
+			return formatNumber(result.num1()) + " " + result.operator() + " " + secondOperand + " =";
+		}
+		
+		return firstOperand + " " + result.operator() + " " + secondOperand + " =";
+	}
 	public Presenter numberPresent(NumberResult result) {
 		String current = numberCurrentText(result);
 		String progress = numberProgressText(result);
@@ -66,25 +81,18 @@ public class CalculatorFormatter{
 		System.out.println("input state: " + result.inputState() +
 				"\noperator: " + result.operator() +
 				"\noperation state: " + result.operationState()+
-				"\nunary state: " + result.unaryState() +
 				"\nnum1: " + result.num1() +
-				"\ndivision number: " + result.num() +
+				"\nunary position: " + result.unaryPosition() +
 				"\n______________________");
 		
 		if (result.inputState() == InputState.AFTER_OPERATOR && result.operationState() == OperationState.SUCCESS) {
-			
-			if (result.unaryState() == UnaryState.AFTER_UNARY) {
-				if (result.num() == DivisionNumber.FIRST) {
-					return getOperandString(result.unary(), formatNumber(result.operand()), result.num()) +
-							" " + result.operator();
-				}
-				return formatNumber(result.num1()) + " " + result.operator();
-			}
+			return unaryFirstText(result);
 		}
 		
-		if (result.inputState() == InputState.NORMAL && 
-				(result.unaryState() == UnaryState.AFTER_UNARY || result.unaryState() == UnaryState.STILL_UNARY)) {
-			return getOperandString(result.unary(), formatNumber(result.operand()), result.num());
+		if (result.inputState() == InputState.AFTER_UNARY && 
+				result.unaryPosition() == UnaryPositon.FIRST&&
+				result.operator() == ' ') {
+			return getOperandString(result.unary(), formatNumber(result.operand()), result.unaryPosition());
 		}
 		
 		if (result.inputState() == InputState.NORMAL && result.operationState() == OperationState.SUCCESS) {
@@ -94,9 +102,9 @@ public class CalculatorFormatter{
 	}
 	
 	private String unaryFirstText(NumberResult result) {
-		if (result.unaryState() == UnaryState.AFTER_UNARY) {
-			if (result.num() == DivisionNumber.FIRST) {
-				return getOperandString(result.unary(), formatNumber(result.operand()), result.num()) +
+		if (result.inputState() == InputState.AFTER_UNARY) {
+			if (result.unaryPosition() == UnaryPositon.FIRST) {
+				return getOperandString(result.unary(), formatNumber(result.operand()), result.unaryPosition()) +
 						" " + result.operator();
 			}
 		}
@@ -105,16 +113,15 @@ public class CalculatorFormatter{
 	
 	private String numberHistoryText(NumberResult result) {
 
-		if (result.unaryState() ==  UnaryState.AFTER_UNARY && result.inputState() == InputState.NORMAL) {
-			String operand = getOperandString(result.unary(), formatNumber(result.operand()), result.num());
-			return operand;
+		if (result.historyState() ==  HistoryState.SHOW && result.inputState() == InputState.AFTER_UNARY) {
+			return getOperandString(result.unary(), formatNumber(result.operand()), result.unaryPosition());
 		}
 		return "";
 	}
 	
 	private String numberCurrentText(NumberResult result) {
 		if (result.operationState() == OperationState.ERROR || result.current().equals("0")
-				|| result.unaryState() == UnaryState.AFTER_UNARY || result.inputState() == InputState.AFTER_OPERATOR) {
+				|| result.inputState() == InputState.AFTER_UNARY || result.inputState() == InputState.AFTER_OPERATOR) {
 			return formatNumber(result.value());
 		}
 //		
@@ -131,7 +138,7 @@ public class CalculatorFormatter{
 		return unary(ressult);
 	}
 	
-	private String getOperandString(Map<DivisionNumber, List<UnaryOperator>> unary, String operand, DivisionNumber num) {
+	private String getOperandString(Map<UnaryPositon, List<UnaryOperator>> unary, String operand, UnaryPositon num) {
 		String text = "";
 		for (var key : unary.entrySet()) {
 			if (key.getKey() == num) {
@@ -148,33 +155,33 @@ public class CalculatorFormatter{
 		return text;
 	}
 
-	private String unaryError(Map<DivisionNumber, List<UnaryOperator>> unary, String operand1, String operand2,
+	private String unaryError(Map<UnaryPositon, List<UnaryOperator>> unary, String operand1, String operand2,
 			char firstOperator, String num1) {
 		
-		if (unary.containsKey(DivisionNumber.FIRST) && !unary.containsKey(DivisionNumber.SECOND)) {
-			return getOperandString(unary, operand2, DivisionNumber.FIRST);
+		if (unary.containsKey(UnaryPositon.FIRST) && !unary.containsKey(UnaryPositon.SECOND)) {
+			return getOperandString(unary, operand2, UnaryPositon.FIRST);
 		}
-		if(!unary.containsKey(DivisionNumber.FIRST) && unary.containsKey(DivisionNumber.SECOND)){
-			return num1 + " " + firstOperator + " " + getOperandString(unary, operand2, DivisionNumber.SECOND);
+		if(!unary.containsKey(UnaryPositon.FIRST) && unary.containsKey(UnaryPositon.SECOND)){
+			return num1 + " " + firstOperator + " " + getOperandString(unary, operand2, UnaryPositon.SECOND);
 		}
-		return getOperandString(unary, operand2, DivisionNumber.FIRST)
+		return getOperandString(unary, operand2, UnaryPositon.FIRST)
 				+ " " + firstOperator + " " +
-				getOperandString(unary, operand2, DivisionNumber.SECOND);
+				getOperandString(unary, operand2, UnaryPositon.SECOND);
 	}
 	
 	private Presenter unary(CalculationResult result) {
-		String currentText = unaryCurrentText(result.unaryError(), result.unaryErrorOperator(), formatNumber(result.result()));
+		String currentText = unaryCurrentText(result.operationState(), result.unaryErrorOperator(), formatNumber(result.result()));
 		
-		String progressText = unaryProgressText(result.unaryError(), result.unary(),
+		String progressText = unaryProgressText(result.operationState(), result.unary(),
 				formatNumber(result.operand1()), formatNumber(result.operand2()),
 				result.firstOperator(), formatNumber(result.num1()));
 		
 		return new Presenter(currentText, progressText, "");
 	}
 	
-	private String unaryCurrentText(boolean unaryError, UnaryOperator operator, String result) {
+	private String unaryCurrentText(OperationState state, UnaryOperator operator, String result) {
 		//System.out.println("is unary error: " + unaryError);
-		if (unaryError) {
+		if (state == OperationState.ERROR) {
 			
 			if (operator == UnaryOperator.INVERSE) {
 				return "Cannot divided by zero";
@@ -184,24 +191,24 @@ public class CalculatorFormatter{
 		}
 		return result;
 	}
-	private String unaryProgressText(boolean unaryError, Map<DivisionNumber, List<UnaryOperator>> unary,
+	private String unaryProgressText(OperationState state, Map<UnaryPositon, List<UnaryOperator>> unary,
 			String operand1, String operand2, char firstOperator,
 			String num1) {
 		
 		String firstOperand = "";
 		String secondOperand = "";
 		
-		if (unaryError) {
+		if (state == OperationState.ERROR) {
 			return  unaryError(unary, operand1, operand2,firstOperator, num1);
 		}
 
-		firstOperand = getOperandString(unary, operand1, DivisionNumber.FIRST);
-		secondOperand = getOperandString(unary, operand2, DivisionNumber.SECOND);
-		if (unary.containsKey(DivisionNumber.FIRST) && !unary.containsKey(DivisionNumber.SECOND)) {
+		firstOperand = getOperandString(unary, operand1, UnaryPositon.FIRST);
+		secondOperand = getOperandString(unary, operand2, UnaryPositon.SECOND);
+		if (unary.containsKey(UnaryPositon.FIRST) && !unary.containsKey(UnaryPositon.SECOND)) {
 			return firstOperand;
 		}		
 		
-		if (!unary.containsKey(DivisionNumber.FIRST) && unary.containsKey(DivisionNumber.SECOND)) {
+		if (!unary.containsKey(UnaryPositon.FIRST) && unary.containsKey(UnaryPositon.SECOND)) {
 			return num1 + " " + firstOperator + " " + secondOperand;
 		}
 		return firstOperand + " " + firstOperator + " " + secondOperand;
@@ -213,84 +220,79 @@ public class CalculatorFormatter{
 
 	private Presenter operate(CalculationResult result) {
 		String progress =
-				progressText(result.addOperator(), result.unary(), formatNumber(result.result()),result.secondOperator(),
-				formatNumber(result.num1()), formatNumber(result.num2()), formatNumber(result.operand1()),
-				formatNumber(result.operand2()),	result.operationError(), result.firstOperator(), result.operate());
+				operatorProgressText(result);
 		
-		String current = currentText(result.operationError(), formatNumber(result.result()),
-				result.operate(), formatNumber(result.num1()), result.secondOperator());
+		String current = operatorCurrentText(result);
 		
 		String history = "";
-		if (result.operate()) {
-			history = historyText(formatNumber(result.operand1()), formatNumber(result.operand2()), result.unary(),
-					formatNumber(result.num1()), formatNumber(result.num2()), result.firstOperator());
+		if (result.historyState() == HistoryState.SHOW) {
+			history = operatorHistoryText(result);
 		}
 		return new Presenter(current, progress, history);
 	}
 	
-	private String currentText(boolean operationError, String result, boolean operate, String num1, char secondOperator) {
+	private String operatorCurrentText(CalculationResult result) {
 		
-		if (operationError) {
+		if (result.operationState() == OperationState.ERROR) {
 			return "Cannot divided by zero";
 		}
 		
-		if (operate) {
-			return result;
+		if (result.historyState() == HistoryState.SHOW) {
+			return formatNumber(result.result());
 		}
 		
-		return num1;
+		return formatNumber(result.num1());
 	}
 	
-	private String progressText(boolean addOperator, Map<DivisionNumber, List<UnaryOperator>> unary,
-			String result, char secondOperator, String num1, String num2, String operand1, String operand2,
-			boolean operationError, char firstOperator, boolean operate) {
+	private String operatorProgressText(CalculationResult result) {
 
 		String text = "";
 
-		if (operationError) {
-			text = num1 + " " + firstOperator + " " + num2 + secondOperator;
+		if (result.operationState() == OperationState.ERROR) {
+			text = formatNumber(result.num1()) + " " + result.firstOperator() + " " +
+		formatNumber(result.num2()) + " " + result.secondOperator();
 		}
 		
-		if (operate) {
-			text = result + " " + secondOperator;
-			
+		if (result.operationState() == OperationState.SUCCESS) {
+			text = formatNumber(result.result()) + " " + result.secondOperator();
 		}
-		if (secondOperator == ' ' && unary.isEmpty()){
-			text = num1 + " " + firstOperator;
+		
+		if (result.secondOperator() == ' ' && result.unaryPositon() == UnaryPositon.NONE){
+			text = formatNumber(result.num1()) + " " + result.firstOperator();
 		}
-		if(secondOperator == ' ' && !unary.isEmpty()){
-			String firstOperand = getOperandString(unary, operand1, DivisionNumber.FIRST);
-			text = firstOperand + " " + firstOperator;
+		
+		if(result.secondOperator() == ' ' && result.unaryPositon() == UnaryPositon.FIRST){
+			String firstOperand = getOperandString(result.unary(), formatNumber(result.operand1()), result.unaryPositon());
+			text = firstOperand + " " + result.firstOperator();
 		}
+		
 		return text;
 	}
 	
-	private String historyText(String operand1, String operand2,  Map<DivisionNumber, List<UnaryOperator>> unary,
-			String num1, String num2, char firstOperator) {
+	private String operatorHistoryText(CalculationResult result) {
 		
-			if (!unary.isEmpty()) {
-				return operationUnary(operand1, operand2, unary, num1, num2, firstOperator);
+			if (result.unaryPositon() != UnaryPositon.NONE) {
+				return operationUnary(result);
 			}
-			return num1 + " " + firstOperator + " " + num2 + " =";
+			return formatNumber(result.num1()) + " " + result.firstOperator() + " " + formatNumber(result.num2()) + " =";
 	}
 	
-	private String operationUnary(String operand1, String operand2,  Map<DivisionNumber, List<UnaryOperator>> unary,
-			String num1, String num2, char firstOperator) {
+	private String operationUnary(CalculationResult result) {
 
 		String firstOperand = "";
 		String secondOperand = "";
-		secondOperand = getOperandString(unary, operand2, DivisionNumber.SECOND);
-		firstOperand = getOperandString(unary, operand1, DivisionNumber.FIRST);
-		if (unary.containsKey(DivisionNumber.FIRST) && !unary.containsKey(DivisionNumber.SECOND)) {
+		secondOperand = getOperandString(result.unary(), formatNumber(result.operand2()), UnaryPositon.SECOND);
+		firstOperand = getOperandString(result.unary(), formatNumber(result.operand1()), UnaryPositon.FIRST);
+		if (result.unaryPositon() == UnaryPositon.FIRST) {
 			
-			return firstOperand + " " + firstOperator + " " + num2 + " =";
+			return firstOperand + " " + result.firstOperator() + " " + formatNumber(result.num2()) + " =";
 		}
 		
-		if (!unary.containsKey(DivisionNumber.FIRST) && unary.containsKey(DivisionNumber.SECOND)) {
+		if (result.unaryPositon() == UnaryPositon.SECOND) {
 			
-			return num1 + " " + firstOperator + " " + secondOperand + " =";
+			return formatNumber(result.num1()) + " " + result.firstOperator() + " " + secondOperand + " =";
 		}
 		
-		return firstOperand + " " + firstOperator + " " + secondOperand + " =";
+		return firstOperand + " " + result.firstOperator() + " " + secondOperand + " =";
 	}
 }

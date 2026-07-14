@@ -10,12 +10,12 @@ public record CalculationResult(
 	double num2,
 	char firstOperator,
 	char secondOperator,
-	Map<DivisionNumber, List<UnaryOperator>> unary,
+	Map<UnaryPositon, List<UnaryOperator>> unary,
 	double result,
-	boolean addOperator,
-	boolean unaryError,
-	boolean operationError,
-	boolean operate,
+	UnaryPositon unaryPositon,
+	InputState inputState,
+	OperationState operationState,
+	HistoryState historyState,
 	UnaryOperator unaryErrorOperator
 	){}
 	

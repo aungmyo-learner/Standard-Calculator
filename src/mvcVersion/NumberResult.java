@@ -6,12 +6,12 @@ import java.util.Map;
 public record NumberResult (
 		String current,
 		double value,
-		Map<DivisionNumber, List<UnaryOperator>> unary,
+		Map<UnaryPositon, List<UnaryOperator>> unary,
 		double operand,
 		InputState inputState,
 		OperationState operationState,
-		UnaryState unaryState,
-		DivisionNumber num,
+		UnaryPositon unaryPosition,
+		HistoryState historyState,
 		double num1,
 		char operator
 ) {}

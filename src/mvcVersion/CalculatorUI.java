@@ -190,11 +190,12 @@ public class CalculatorUI {
 					operatorEnable();
 				}
 				
-				if (result.unaryState() == UnaryState.AFTER_UNARY && result.operator() == ' ') {
+				if (result.historyState() == HistoryState.SHOW && result.operator() == ' ') {
 					history.getItems().add(0, presenter.historyText() + "\n" + result.current());
 				}
 				progress.setText(presenter.progressText());
 				current.setText(presenter.currentText());
+				updateHistoryTrashButton();
 			});
 		}
 	}
@@ -221,7 +222,7 @@ public class CalculatorUI {
 	private void presenter(CalculationResult result) {
 		Presenter presenter = formatter.unaryPresent(result);
 		
-		if (result.unaryError()) {
+		if (result.operationState() == OperationState.ERROR) {
 			operatorDisable();
 		}
 		current.setText(presenter.currentText());
@@ -236,7 +237,7 @@ public class CalculatorUI {
 		
 		CalculationResult result = service.clickOperator(op, current.getText());
 		Presenter presenter = formatter.operatePresent(result);
-		if (result.operationError()) {
+		if (result.operationState() == OperationState.ERROR) {
 			operatorDisable();
 			progress.setText(presenter.progressText());
 			current.setText(presenter.currentText());
@@ -245,7 +246,7 @@ public class CalculatorUI {
 		
 		progress.setText(presenter.progressText());
 		current.setText(presenter.currentText());
-		if (result.operate()) {
+		if (result.historyState() == HistoryState.SHOW) {
 			history.getItems().add(presenter.historyText() + "\n" + presenter.currentText());
 		}
 		updateHistoryTrashButton();
@@ -256,7 +257,7 @@ public class CalculatorUI {
 		EqualResult result = service.clickEqual(current.getText());
 		Presenter presenter = formatter.equalPresent(result);
 		current.setText(presenter.currentText());
-		if (result.error()) {
+		if (result.operationState() == OperationState.ERROR) {
 			operatorDisable();
 			progress.setText(presenter.progressText());
 			return;

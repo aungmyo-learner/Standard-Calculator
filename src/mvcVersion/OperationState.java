@@ -3,5 +3,6 @@ package mvcVersion;
 public enum OperationState {
 	NORMAL,
 	ERROR,
-	SUCCESS;
+	SUCCESS,
+	ZERRO;
 }

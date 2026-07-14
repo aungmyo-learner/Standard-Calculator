@@ -16,54 +16,65 @@ public class CalculatorService {
 		model.clear();
 		return new NumberResult(currentText, value, model.getUnary(),
 				model.getOperand1(), model.getInputState(), operationState,
-				model.getUnaryState(), DivisionNumber.NONE, model.getNum1(), model.getFirstOperator());
+				model.getUnaryPosition(), model.getHistoryState(), model.getNum1(), model.getFirstOperator());
 	}
 	
-	private NumberResult afterOperatorAndSuccess(String currentText, int value) {
+	private NumberResult unaryAndSuccess(String currentText, int value) {
 		InputState inputState = model.getInputState();
 		model.setInputState(InputState.NORMAL);
 		
-		if (model.getUnary().containsKey(DivisionNumber.SECOND)) {
-			model.removeUnary(DivisionNumber.SECOND);
-			model.setUnaryState(UnaryState.NORMAL);
+		if (model.getUnaryPosition() == UnaryPositon.SECOND) {
+			model.removeUnary(UnaryPositon.SECOND);
+			model.setUnaryPosition(UnaryPositon.NONE);
+			model.setOperand2(0);
+			return new NumberResult(currentText, value, model.getUnary(),
+					model.getOperand1(), inputState, model.getOperationState(),
+					model.getUnaryPosition(), model.getHistoryState(), model.getNum1(), model.getFirstOperator());
 		}
 		
 		return new NumberResult(currentText, value, model.getUnary(),
 				model.getOperand1(), inputState, model.getOperationState(),
-				model.getUnaryState(), DivisionNumber.FIRST, model.getNum1(), model.getFirstOperator());
+				model.getUnaryPosition(), model.getHistoryState(), model.getNum1(), model.getFirstOperator());
 	}
 	
 	private NumberResult normalAndSuccess(String currentText, int value) {
-		if (model.getUnary().containsKey(DivisionNumber.SECOND)) {
-			model.removeUnary(DivisionNumber.SECOND);
-			model.setOperand2(0);
-		}
+		
 		return new NumberResult(currentText, value, model.getUnary(),
 				model.getOperand1(), model.getInputState(), model.getOperationState(),
-				model.getUnaryState(), DivisionNumber.NONE, model.getNum1(), model.getFirstOperator());
+				model.getUnaryPosition(), model.getHistoryState(), model.getNum1(), model.getFirstOperator());
 	}
 	
 	private NumberResult afterUnary(String currentText, int value) {
-		UnaryState unaryState = model.getUnaryState();
-		model.setUnaryState(UnaryState.STILL_UNARY);
+		InputState inputState = model.getInputState();
+		model.setInputState(InputState.NORMAL);
 		return new NumberResult(currentText, value, model.getUnary(),
-				model.getOperand1(), model.getInputState(), model.getOperationState(),
-				unaryState, DivisionNumber.FIRST, model.getNum1(), model.getFirstOperator());
+				model.getOperand1(), inputState, model.getOperationState(),
+				model.getUnaryPosition(), model.getHistoryState(), model.getNum1(), model.getFirstOperator());
 	}
 	
 	private NumberResult number(String currentText, int value) {
+		
+		System.out.println("Service number method\ninput state: " + model.getInputState() +
+				"\noperator: " + model.getFirstOperator() +
+				"\noperation state: " + model.getOperationState()+
+				"\nunary position: " + model.getUnaryPosition() +
+				"\nnum1: " + model.getNum1() +
+				"\nis first unary: " + model.getUnary().containsKey(UnaryPositon.FIRST) +
+				"\nis second unary: " + model.getUnary().containsKey(UnaryPositon.SECOND) +
+				"\n______________________");
 		
 		state();
 		if (model.getOperationState() == OperationState.ERROR) {
 			return error(currentText, value);			
 		}
 		
-		if (model.getInputState() == InputState.AFTER_OPERATOR && model.getOperationState() == OperationState.SUCCESS) {
-			return afterOperatorAndSuccess(currentText, value);
+		if (model.getInputState() == InputState.AFTER_UNARY && model.getOperationState() == OperationState.SUCCESS) {
+			return unaryAndSuccess(currentText, value);
 		}
 		
-		if (model.getInputState() == InputState.NORMAL && (model.getUnaryState() == UnaryState.AFTER_UNARY
-				|| model.getUnaryState() == UnaryState.STILL_UNARY)) {
+		if (model.getInputState() == InputState.AFTER_UNARY &&
+				model.getUnaryPosition() == UnaryPositon.FIRST &&
+				model.getFirstOperator() == ' ') {
 			return afterUnary(currentText, value);
 		}
 
@@ -73,7 +84,7 @@ public class CalculatorService {
 		
 		return new NumberResult(currentText, value, model.getUnary(),
 				model.getOperand1(), model.getInputState(), model.getOperationState(),
-				model.getUnaryState(), DivisionNumber.NONE, model.getNum1(), model.getFirstOperator());
+				model.getUnaryPosition(), model.getHistoryState(), model.getNum1(), model.getFirstOperator());
 	}
 
 	public void clickClear() {
@@ -85,54 +96,63 @@ public class CalculatorService {
 	}
 	
 	private EqualResult equal(String text) {
-		if (text.equals("0") && model.getFirstOperator() == ' ') {
-			return new EqualResult(true, model.getUnary(), model.getFirstOperator(),
-					false, model.getOperand1(), model.getOperand2(),
-					model.getNum1(), model.getNum2(), 0, model.isOperate());
-		}
-		double value = Double.parseDouble(text);
 		
-		if (!model.getUnary().isEmpty() && model.getFirstOperator() == ' ') {
-			model.setEqualed(true);
-			return new EqualResult(false, model.getUnary(), model.getFirstOperator(),
-					false, model.getOperand1(), model.getOperand2(),
-					model.getNum1(), model.getNum2(), value, false);
+		double value = Double.parseDouble(text);
+		model.setHistoryState(HistoryState.SHOW);
+		
+		if (model.getUnaryPosition() != UnaryPositon.NONE && model.getFirstOperator() == ' ') {
+			model.setInputState(InputState.AFTER_EQUAL);
+			return new EqualResult(model.getUnary(), model.getFirstOperator(), model.getOperand1(),
+					model.getOperand2(), model.getOperationState(), model.getHistoryState(),
+					model.getUnaryPosition(), model.getNum1(), model.getNum2(), value);
 			
 		}
 		
-		if (model.isEqualed()) {
+		if (model.getInputState() == InputState.AFTER_EQUAL) {
 			model.setNum1(value);
 			if (!operate()) {
-				model.setOperationError(true);
-				return new EqualResult(false, model.getUnary(), model.getFirstOperator(),
-						model.isOperationError(), model.getOperand1(), model.getOperand2(),
-						model.getNum1(), model.getNum2(), 0, model.isOperate());
+				model.setHistoryState(HistoryState.NONE);
+				model.setOperationState(OperationState.ERROR);
+				return new EqualResult(model.getUnary(), model.getFirstOperator(), model.getOperand1(),
+						model.getOperand2(), model.getOperationState(), model.getHistoryState(),
+						model.getUnaryPosition(), model.getNum1(), model.getNum2(), 0);
 			}
 		}else {
 			model.setNum2(value);
 			if (!operate()) {
-				model.setOperationError(true);
-				return new EqualResult(false, model.getUnary(), model.getFirstOperator(),
-						model.isOperationError(), model.getOperand1(), model.getOperand2(),
-						model.getNum1(), model.getNum2(), 0, model.isOperate());
+				model.setHistoryState(HistoryState.NONE);
+				model.setOperationState(OperationState.ERROR);
+				return new EqualResult(model.getUnary(), model.getFirstOperator(), model.getOperand1(),
+						model.getOperand2(), model.getOperationState(), model.getHistoryState(),
+						model.getUnaryPosition(), model.getNum1(), model.getNum2(), 0);
 			}
+			return new EqualResult(model.getUnary(), model.getFirstOperator(), model.getOperand1(),
+					model.getOperand2(), model.getOperationState(), model.getHistoryState(),
+					model.getUnaryPosition(), model.getNum1(), model.getNum2(), model.getAnswer());
 		}
-		model.setOperationError(false);
-		model.setOperate(true);
-		model.setEqualed(true);
-	return new EqualResult(false, model.getUnary(), model.getFirstOperator(),
-			model.isOperationError(), model.getOperand1(), model.getOperand2(),
-			model.getNum1(), model.getNum2(), model.getAnswer(), model.isOperate());
+		model.setInputState(InputState.AFTER_EQUAL);
+		
+	return new EqualResult(model.getUnary(), model.getFirstOperator(), model.getOperand1(),
+			model.getOperand2(), model.getOperationState(), model.getHistoryState(),
+			model.getUnaryPosition(), model.getNum1(), model.getNum2(), value);
 	}
 	
 	public CalculationResult clickOperator(char op, String text) {
 		state();
-		System.out.println("operator operation state: " + model.getOperationState() +
-				"\n input state: " + model.getInputState() +
-				"\n__________________");
-		if (model.getUnaryState() == UnaryState.STILL_UNARY) {
+		System.out.println("input state: " + model.getInputState() +
+				"\noperator1: " + model.getFirstOperator() +
+				"\noperator2: " + model.getSecondOperator() +
+				"\noperation state: " + model.getOperationState()+
+				"\nunary position: " + model.getUnaryPosition() +
+				"\nnum1: " + model.getNum1() +
+				"\nis first unary: " + model.getUnary().containsKey(UnaryPositon.FIRST) +
+				"\nis second unary: " + model.getUnary().containsKey(UnaryPositon.SECOND) +
+				"\n______________________");
+		if (model.getInputState() == InputState.NORMAL &&
+				model.getUnaryPosition() == UnaryPositon.FIRST &&
+				model.getFirstOperator() == ' ') {
 			model.clearUnary();
-			model.setUnaryState(UnaryState.NORMAL);
+			model.setUnaryPosition(UnaryPositon.NONE);
 		}
 		double value = Double.parseDouble(text);
 		
@@ -144,34 +164,38 @@ public class CalculatorService {
 			if (model.getInputState() == InputState.AFTER_OPERATOR) {
 				model.setFirstOperator(op);
 				model.setNum1(value);
+				model.setHistoryState(HistoryState.NONE);
 				return new CalculationResult(model.getOperand1(),model.getOperand2(), model.getNum1(),
 						model.getNum2(), model.getFirstOperator(), model.getSecondOperator(),
-						model.getUnary(), 0, model.isAddOperator(),
-						model.isUnaryError(), model.isOperationError(), model.isOperate(), model.getUnaryErrorOperator());
+						model.getUnary(), 0, model.getUnaryPosition(), model.getInputState(),
+						model.getOperationState(), model.getHistoryState(), model.getUnaryErrorOperator());
 			}
+			
 			model.setNum2(value);
 			if (!operate()) {
-				model.setWaitSecondNumber(true);
 				model.setSecondOperator(op);
-				model.setOperationError(true);
+				model.setHistoryState(HistoryState.NONE);
 				model.setOperationState(OperationState.ERROR);
 				return new CalculationResult(model.getOperand1(),model.getOperand2(), model.getNum1(),
 						model.getNum2(), model.getFirstOperator(), model.getSecondOperator(),
-						model.getUnary(), 0, model.isAddOperator(),
-						model.isUnaryError(), model.isOperationError(), model.isOperate(), model.getUnaryErrorOperator());
+						model.getUnary(), 0, model.getUnaryPosition(), model.getInputState(),
+						model.getOperationState(), model.getHistoryState(), model.getUnaryErrorOperator());
 				
 			}
 			model.setSecondOperator(op);
-			model.setOperate(true);
+			model.setHistoryState(HistoryState.SHOW);
+			
 		}
 		model.setUnaryErrorOperator(UnaryOperator.NOUNARY);
 		model.setInputState(InputState.AFTER_OPERATOR);
-		model.setOperationState(OperationState.SUCCESS);
+		if (model.getSecondOperator() == ' ') {
+			model.setOperationState(OperationState.SUCCESS);
+		}
 		
 		return new CalculationResult(model.getOperand1(),model.getOperand2(), model.getNum1(),
 				model.getNum2(), model.getFirstOperator(), model.getSecondOperator(),
-				model.getUnary(), model.getAnswer(), model.isAddOperator(),
-				model.isUnaryError(), model.isOperationError(), model.isOperate(), model.getUnaryErrorOperator());
+				model.getUnary(), model.getAnswer(), model.getUnaryPosition(), model.getInputState(),
+				model.getOperationState(), model.getHistoryState(), model.getUnaryErrorOperator());
 	}
 	
 	public CalculationResult clickSQR(String text) {
@@ -185,7 +209,8 @@ public class CalculatorService {
 		UnaryOperator sqr = UnaryOperator.SQR;
 		UnaryResult result = sqr.calculate(value);
 		if (model.getFirstOperator() == ' ') {
-			DivisionNumber first = DivisionNumber.FIRST;
+			UnaryPositon first = UnaryPositon.FIRST;
+			unaryState();
 
 			if (!model.getUnary().containsKey(first)) {
 				model.setOperand1(value);
@@ -197,9 +222,9 @@ public class CalculatorService {
 				return unaryError(value, sqr);
 			}
 			model.setNum1(result.result());
-			
 		}else {
-			DivisionNumber second = DivisionNumber.SECOND;
+			UnaryPositon second = UnaryPositon.SECOND;
+			unaryState();
 
 			if (!model.getUnary().containsKey(second)) {
 				model.setOperand2(value);
@@ -228,8 +253,8 @@ public class CalculatorService {
 		UnaryOperator inverse = UnaryOperator.INVERSE;
 		UnaryResult result = inverse.calculate(value);
 		if (model.getFirstOperator() == ' ') {
-			DivisionNumber first = DivisionNumber.FIRST;
-
+			UnaryPositon first = UnaryPositon.FIRST;
+			unaryState();
 			if (!model.getUnary().containsKey(first)) {
 				model.setOperand1(value);
 			}
@@ -242,8 +267,8 @@ public class CalculatorService {
 			model.setNum1(result.result());
 			
 		}else {
-			DivisionNumber second = DivisionNumber.SECOND;
-
+			UnaryPositon second = UnaryPositon.SECOND;
+			unaryState();
 			if (!model.getUnary().containsKey(second)) {
 				model.setOperand2(value);
 			}
@@ -255,14 +280,16 @@ public class CalculatorService {
 			}
 			
 			model.setNum2(result.result());
+			
 		}
 		return UnaryResult(result.result());
 	}
+	
 	private void state() {
-		if (model.isEqualed()) {
+		if (model.getInputState() == InputState.AFTER_EQUAL) {
 			model.clear();
 		}
-		if (model.isOperate()) {
+		if (model.getHistoryState() == HistoryState.SHOW) {
 			model.ifOperate();
 		}
 	}
@@ -279,7 +306,7 @@ public class CalculatorService {
 		UnaryResult result = sqrt.calculate(value);
 		
 		if (model.getFirstOperator() == ' ') {
-			DivisionNumber first = DivisionNumber.FIRST;
+			UnaryPositon first = UnaryPositon.FIRST;
 			if (!model.getUnary().containsKey(first)) {
 				model.setOperand1(value);
 			}
@@ -290,8 +317,9 @@ public class CalculatorService {
 				return unaryError(value, sqrt);
 			}
 			model.setNum1(result.result());
+			unaryState();
 		}else {
-			DivisionNumber second = DivisionNumber.SECOND;
+			UnaryPositon second = UnaryPositon.SECOND;
 
 			if (!model.getUnary().containsKey(second)) {
 				model.setOperand2(value);
@@ -304,28 +332,36 @@ public class CalculatorService {
 			}
 			
 			model.setNum2(result.result());
+			unaryState();
 		}
-		
 		return UnaryResult(result.result());
 	}
 	
+	private void unaryState() {
+		model.setInputState(InputState.AFTER_UNARY);
+		if (model.getFirstOperator() == ' ') {
+			model.setUnaryPosition(UnaryPositon.FIRST);
+		}else {
+			model.setUnaryPosition(UnaryPositon.SECOND);
+		}
+	}
 	private CalculationResult UnaryResult(double result) {
-		model.setUnaryState(UnaryState.AFTER_UNARY);
+		model.setHistoryState(HistoryState.NONE);
 		model.setUnaryErrorOperator(UnaryOperator.NOUNARY);
 		return new CalculationResult(model.getOperand1(),model.getOperand2(), model.getNum1(),
 				model.getNum2(), model.getFirstOperator(), model.getSecondOperator(),
-				model.getUnary(), result, model.isAddOperator(),
-				model.isUnaryError(), model.isOperationError(), model.isOperate(), model.getUnaryErrorOperator());
+				model.getUnary(), result, model.getUnaryPosition(), model.getInputState(),
+				model.getOperationState(), model.getHistoryState(), model.getUnaryErrorOperator());
 	}
 	
 	private CalculationResult unaryError(double value,UnaryOperator unary) {
-		model.setUnaryState(UnaryState.NORMAL);
 		model.setOperationState(OperationState.ERROR);
+		model.setHistoryState(HistoryState.NONE);
 		model.setUnaryErrorOperator(unary);
 		return new CalculationResult(model.getOperand1(),model.getOperand2(), model.getNum1(),
 				model.getNum2(), model.getFirstOperator(), model.getSecondOperator(),
-				model.getUnary(), value, model.isAddOperator(),
-				model.isUnaryError(), model.isOperationError(), model.isOperate(), model.getUnaryErrorOperator());
+				model.getUnary(), value, model.getUnaryPosition(), model.getInputState(),
+				model.getOperationState(), model.getHistoryState(), model.getUnaryErrorOperator());
 	}
 
 	public String backspace(String text) {
