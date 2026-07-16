@@ -59,7 +59,7 @@ public class CalculatorService {
 	}
 	
 	private NumberResult number(String currentText, int value) {
-		
+		state();
 		System.out.println("Service number method\ninput state: " + model.getInputState() +
 				"\noperator: " + model.getFirstOperator() +
 				"\noperation state: " + model.getOperationState()+
@@ -70,7 +70,6 @@ public class CalculatorService {
 				"\nis second unary: " + model.getUnary().containsKey(UnaryPosition.SECOND) +
 				"\n______________________");
 		
-		state();
 		if (model.getOperationState() == OperationState.ERROR) {
 			return error(currentText, value);			
 		}
@@ -79,6 +78,14 @@ public class CalculatorService {
 			return unaryAndSuccess(currentText, value);
 		}
 		
+		if (model.getOperationState() == OperationState.SUCCESS && model.getInputState() == InputState.AFTER_PERCENTAGE) {
+			InputState inputState = model.getInputState();
+			model.setInputState(InputState.NORMAL);
+			model.setNum2(0);
+			return new NumberResult(currentText, value, model.getUnary(),
+					model.getOperand1(), inputState, model.getOperationState(),
+					model.getUnaryPosition(), model.getHistoryState(), model.getNum1(), model.getFirstOperator());
+		}
 		if (model.getInputState() == InputState.AFTER_UNARY &&
 				model.getUnaryPosition() == UnaryPosition.FIRST &&
 				model.getFirstOperator() == ' ') {
@@ -89,7 +96,13 @@ public class CalculatorService {
 				|| (model.getInputState() == InputState.AFTER_OPERATOR && model.getOperationState() == OperationState.SUCCESS)) {
 			return success(currentText, value);
 		}
-		
+		if (model.getInputState() == InputState.AFTER_EQUAL) {
+			InputState inputState = model.getInputState();
+			model.setInputState(InputState.NORMAL);
+			return new NumberResult(currentText, value, model.getUnary(),
+					model.getOperand1(), inputState, model.getOperationState(),
+					model.getUnaryPosition(), model.getHistoryState(), model.getNum1(), model.getFirstOperator());
+		}
 		return new NumberResult(currentText, value, model.getUnary(),
 				model.getOperand1(), model.getInputState(), model.getOperationState(),
 				model.getUnaryPosition(), model.getHistoryState(), model.getNum1(), model.getFirstOperator());
@@ -108,37 +121,37 @@ public class CalculatorService {
 		double value = Double.parseDouble(text);
 		model.setHistoryState(HistoryState.SHOW);
 		
-		if (model.getUnaryPosition() != UnaryPosition.NONE && model.getFirstOperator() == ' ') {
-			model.setInputState(InputState.AFTER_EQUAL);
-			return new EqualResult(text, model.getUnary(), model.getFirstOperator(), model.getOperand1(),
-					model.getOperand2(), model.getOperationState(), model.getHistoryState(),
-					model.getUnaryPosition(), model.getNum1(), model.getNum2(), value);
-			
-		}
-		
-		if (model.getInputState() == InputState.AFTER_EQUAL) {
+		if ( model.getFirstOperator() == ' ') {
 			model.setNum1(value);
-			if (!operate()) {
-				model.setHistoryState(HistoryState.NONE);
-				model.setOperationState(OperationState.ERROR);
-				return new EqualResult(text, model.getUnary(), model.getFirstOperator(), model.getOperand1(),
-						model.getOperand2(), model.getOperationState(), model.getHistoryState(),
-						model.getUnaryPosition(), model.getNum1(), model.getNum2(), 0);
-			}
+			
 		}else {
-			model.setNum2(value);
-			if (!operate()) {
-				model.setHistoryState(HistoryState.NONE);
-				model.setOperationState(OperationState.ERROR);
-				return new EqualResult(text, model.getUnary(), model.getFirstOperator(), model.getOperand1(),
-						model.getOperand2(), model.getOperationState(), model.getHistoryState(),
-						model.getUnaryPosition(), model.getNum1(), model.getNum2(), 0);
+			if (model.getInputState() == InputState.AFTER_EQUAL) {
+				model.setNum1(value);
+				
+				if (!operate()) {
+					model.setHistoryState(HistoryState.NONE);
+					model.setOperationState(OperationState.ERROR);
+					return new EqualResult(text, model.getUnary(), model.getFirstOperator(), model.getOperand1(),
+							model.getOperand2(), model.getOperationState(), model.getHistoryState(),
+							model.getUnaryPosition(), model.getNum1(), model.getNum2(), 0);
+				}
+			}else {
+				model.setNum2(value);
+				if (!operate()) {
+					model.setHistoryState(HistoryState.NONE);
+					model.setOperationState(OperationState.ERROR);
+					return new EqualResult(text, model.getUnary(), model.getFirstOperator(), model.getOperand1(),
+							model.getOperand2(), model.getOperationState(), model.getHistoryState(),
+							model.getUnaryPosition(), model.getNum1(), model.getNum2(), 0);
+				}
+				
 			}
+			model.setInputState(InputState.AFTER_EQUAL);
+			model.setOperationState(OperationState.SUCCESS);
 			return new EqualResult(text, model.getUnary(), model.getFirstOperator(), model.getOperand1(),
 					model.getOperand2(), model.getOperationState(), model.getHistoryState(),
 					model.getUnaryPosition(), model.getNum1(), model.getNum2(), model.getAnswer());
 		}
-		model.setInputState(InputState.AFTER_EQUAL);
 		
 	return new EqualResult(text, model.getUnary(), model.getFirstOperator(), model.getOperand1(),
 			model.getOperand2(), model.getOperationState(), model.getHistoryState(),
@@ -298,11 +311,13 @@ public class CalculatorService {
 	private void state() {
 		if (model.getInputState() == InputState.AFTER_EQUAL) {
 			model.clear();
+			return;
 		}
 		if (model.getHistoryState() == HistoryState.SHOW) {
 			model.ifOperate();
 		}
 	}
+	
 	public CalculationResult clickSquareRoot(String text) {
 		return squareRoot(text);
 	}
@@ -391,6 +406,7 @@ public class CalculatorService {
 		}
 		return UnaryResult(result.result());
 	}
+	
 	private void unaryState() {
 		model.setInputState(InputState.AFTER_UNARY);
 		if (model.getFirstOperator() == ' ') {
@@ -445,26 +461,25 @@ public class CalculatorService {
 		return percentage(text);
 	}
 	private PercentageResult percentage(String text) {
-
 		double result =0;
-		if (model.getInputState()  == InputState.AFTER_OPERATOR) {
 			double value = Double.parseDouble(text);
 			if(model.getFirstOperator() == '+' || model.getFirstOperator() == '-') {
 				
 				result = model.getNum1() * value / 100;
+				percentageState(result);
 			}else if(model.getFirstOperator() == 'x' || model.getFirstOperator() == '÷') {
 				
 				result = value / 100;
+				percentageState(result);
 			}
-			model.setNum2(result);
-			model.setInputState(InputState.AFTER_PERCENTAGE);
-			model.setOperationState(OperationState.SUCCESS);
-			
-			return new PercentageResult(model.getInputState(), model.getOperationState(),
-					model.getNum1(), model.getNum2(), result, model.getUnary());
-		}
-		return new PercentageResult(model.getInputState(), model.getOperationState(),
-				model.getNum1(), model.getNum2(), result, model.getUnary());
+		return new PercentageResult(model.getInputState(), model.getOperationState(), model.getNum1(),
+				model.getNum2(), result, model.getFirstOperator(), model.getOperand1(), model.getUnaryPosition(),
+				model.getUnary());
 	}
 	
+	private void percentageState(double result) {
+		model.setNum2(result);
+		model.setOperationState(OperationState.SUCCESS);
+		model.setInputState(InputState.AFTER_PERCENTAGE);
+	}
 }
