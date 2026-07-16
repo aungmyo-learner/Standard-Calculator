@@ -4,7 +4,7 @@ public enum UnaryOperator {
 	NOUNARY{
 
 		@Override
-		public String format(String text, UnaryPositon num) {
+		public String format(String text, UnaryPosition num) {
 			// TODO Auto-generated method stub
 			return null;
 		}
@@ -17,7 +17,7 @@ public enum UnaryOperator {
 		
 	},
 	SQRT {
-		public String format(String text, UnaryPositon num) {
+		public String format(String text, UnaryPosition num) {
 			return "\u221A(" + text + ")";
 		}
 		
@@ -30,7 +30,7 @@ public enum UnaryOperator {
 		}
 	},
 	INVERSE{
-		public String format(String text, UnaryPositon num) {
+		public String format(String text, UnaryPosition num) {
 			return "1/(" + text + ")";
 		}
 		
@@ -43,7 +43,7 @@ public enum UnaryOperator {
 		}
 	},
 	SQR{
-		public String format(String text, UnaryPositon num) {
+		public String format(String text, UnaryPosition num) {
 			return "sqr(" + text + ")";
 		}
 		
@@ -51,9 +51,9 @@ public enum UnaryOperator {
 			return new UnaryResult(Math.pow(value, 2), false);
 		}
 	},
-	NEGATE{
-		public String format(String text, UnaryPositon num) {
-			if (num == UnaryPositon.SECOND) {
+	TOGGLE{
+		public String format(String text, UnaryPosition num) {
+			if (num == UnaryPosition.SECOND) {
 				return "negate(" + text + ")";
 			}
 			return text;
@@ -63,7 +63,7 @@ public enum UnaryOperator {
 			return new UnaryResult(-value, false);
 		}
 	};
-	public abstract String format(String text, UnaryPositon num);
+	public abstract String format(String text, UnaryPosition num);
 	
 	public abstract UnaryResult calculate(double value);
 }

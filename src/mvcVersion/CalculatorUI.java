@@ -127,16 +127,16 @@ public class CalculatorUI {
 	}
 	
 	private void actionNoNumber(Scene sc) {
-//		
-//		decimal.setOnAction(e->actionDecimal());
-//		
+		
+		decimal.setOnAction(e->current.setText(formatter.clickDecimal(current.getText())));
+		
 //		//Percentage Case
 //		percentage.setOnAction(e-> actionPercentage());
 //		
 		//Clear Case
 		c.setOnAction(e-> actionC());
 		ce.setOnAction(e->actionCE());
-		backspace.setOnAction(e->current.setText(service.backspace(current.getText())));
+		backspace.setOnAction(e->current.setText(formatter.clickBackspace(current.getText())));
 		equal.setOnAction(e-> actionEqual());
 		
 		//Memory case
@@ -152,6 +152,7 @@ public class CalculatorUI {
 		squareRoot.setOnAction(e->actionSquareRoot());
 		inverse.setOnAction(e-> actionInverse());
 		superscript.setOnAction(e-> actionSQR());
+		toggle.setOnAction(e-> actionToggle());
 		// Operator case
 		plus.setOnAction(e->actionOperator('+'));
 		divide.setOnAction(e-> actionOperator('÷'));
@@ -218,7 +219,11 @@ public class CalculatorUI {
 		presenter(result);
 		updateHistoryTrashButton();
 	}
-	
+	private void actionToggle() {
+		CalculationResult result = service.clickToggle(current.getText());
+		presenter(result);
+		updateHistoryTrashButton();
+	}
 	private void presenter(CalculationResult result) {
 		Presenter presenter = formatter.unaryPresent(result);
 		

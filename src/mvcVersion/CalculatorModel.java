@@ -17,8 +17,8 @@ public class CalculatorModel {
 	private char secondOperator = ' ';
 	private InputState inputState = InputState.NORMAL;
 	private HistoryState historyState = HistoryState.NONE;
-	private UnaryPositon unaryPosition = UnaryPositon.NONE;
-	private Map<UnaryPositon, List<UnaryOperator>> unary = new LinkedHashMap<>();
+	private UnaryPosition unaryPosition = UnaryPosition.NONE;
+	private Map<UnaryPosition, List<UnaryOperator>> unary = new LinkedHashMap<>();
 	private UnaryOperator unaryErrorOperator = UnaryOperator.NOUNARY;
 	private OperationState operationState = OperationState.NORMAL;
 	
@@ -31,11 +31,11 @@ public class CalculatorModel {
 		this.historyState = historyState;
 	}
 
-	public UnaryPositon getUnaryPosition() {
+	public UnaryPosition getUnaryPosition() {
 		return unaryPosition;
 	}
 
-	public void setUnaryPosition(UnaryPositon unaryPosition) {
+	public void setUnaryPosition(UnaryPosition unaryPosition) {
 		this.unaryPosition = unaryPosition;
 	}
 
@@ -103,13 +103,13 @@ public class CalculatorModel {
 		this.secondOperator = secondOperator;
 	}
 	
-	public Map<UnaryPositon, List<UnaryOperator>> getUnary() {
+	public Map<UnaryPosition, List<UnaryOperator>> getUnary() {
 		return unary.isEmpty()? Map.of(): Collections.unmodifiableMap(unary);
 	}
 	public void clearUnary() {
 		unary.clear();
 	}
-	public void addUnary(UnaryPositon count, UnaryOperator unary) {
+	public void addUnary(UnaryPosition count, UnaryOperator unary) {
 		this.unary.computeIfAbsent(count, c-> new LinkedList<>()).add(unary);
 	}
 
@@ -139,7 +139,7 @@ public class CalculatorModel {
 		operand2 = 0;
 		inputState = InputState.NORMAL;
 		operationState = OperationState.NORMAL;
-		
+		unaryPosition = UnaryPosition.NONE;
 	}
 	
 	public void ifOperate() {
@@ -153,8 +153,9 @@ public class CalculatorModel {
 		unary.clear();
 		historyState = HistoryState.NONE;
 		operationState = OperationState.SUCCESS;
+		unaryPosition = UnaryPosition.NONE;
 	}
-	public void removeUnary(UnaryPositon num) {
+	public void removeUnary(UnaryPosition num) {
 		unary.remove(num);
 	}
 }

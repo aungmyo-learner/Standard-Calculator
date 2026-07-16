@@ -16,15 +16,30 @@ public class CalculatorFormatter{
 		String progress = equalProgressText(result);
 		return new Presenter(current, progress, "");
 	}
+
+	public String clickDecimal(String text) {
+		if (!text.contains(".")) {
+			return  text + ".";
+		}
+		return text;
+	}
 	
+	public String clickBackspace(String text) {
+
+		if(text.length() <=1) {
+			return "0";
+		}
+		return text.substring(0, text.length() -1);
+	}
+
 	private String equalCurrentText(EqualResult result) {
 
 		if (result.operationState() == OperationState.ERROR) {
 			return "Cannot divided by zero";
 		}
-//		if (!result.unary().isEmpty() && result.operator() == ' ') {
-//			return formatNumber(result.num1());
-//		}
+		if (!result.unary().isEmpty() && result.operator() == ' ') {
+			return formatNumber(result.num1());
+		}
 		if (result.operationState() == OperationState.SUCCESS) {
 			return formatNumber(result.reslt());
 		}
@@ -32,20 +47,16 @@ public class CalculatorFormatter{
 	}
 	
 	private String equalProgressText(EqualResult result) {
-		if (result.operationState() == OperationState.NORMAL && result.operator() == ' ') {
-			return formatNumber(result.reslt());
-		}
 
 		if (result.operationState() == OperationState.ERROR) {
 			return formatNumber(result.num1()) + " " + result.operator();
 		}
 		
-		if (result.operator() == ' ') {
-			if (result.unaryPositon() == UnaryPositon.FIRST) {
+		if (result.operator() == ' ' && result.operationState() == OperationState.NORMAL) {
+			if (result.unaryPositon() == UnaryPosition.FIRST) {
 				return getOperandString(result.unary(), formatNumber(result.operand1()), result.unaryPositon()) + " =";
-			}else {
-				return formatNumber(result.num1()) + " =";
 			}
+				return result.current() + " =";
 		}
 		
 		return equalUnaryProgressText(result);
@@ -56,14 +67,16 @@ public class CalculatorFormatter{
 
 		String firstOperand = "";
 		String secondOperand = "";
-		secondOperand = getOperandString(result.unary(), formatNumber(result.operand2()), UnaryPositon.SECOND);
-		firstOperand = getOperandString(result.unary(), formatNumber(result.operand1()), UnaryPositon.FIRST);
-		if (result.unaryPositon() == UnaryPositon.FIRST) {
+		secondOperand = getOperandString(result.unary(), formatNumber(result.operand2()), UnaryPosition.SECOND);
+		firstOperand = getOperandString(result.unary(), formatNumber(result.operand1()), UnaryPosition.FIRST);
+		if (result.unary().containsKey(UnaryPosition.FIRST) &&
+				!result.unary().containsKey(UnaryPosition.SECOND)) {
 			
 			return firstOperand + " " + result.operator() + " " + formatNumber(result.num2()) + " =";
 		}
 		
-		if (result.unaryPositon() == UnaryPositon.SECOND) {
+		if (!result.unary().containsKey(UnaryPosition.FIRST) &&
+				result.unary().containsKey(UnaryPosition.SECOND)) {
 			
 			return formatNumber(result.num1()) + " " + result.operator() + " " + secondOperand + " =";
 		}
@@ -85,30 +98,29 @@ public class CalculatorFormatter{
 				"\nunary position: " + result.unaryPosition() +
 				"\n______________________");
 		
-		if (result.inputState() == InputState.AFTER_OPERATOR && result.operationState() == OperationState.SUCCESS) {
-			return unaryFirstText(result);
+		if ((result.inputState() == InputState.AFTER_OPERATOR && result.operationState() == OperationState.SUCCESS) ||
+				(result.inputState() == InputState.NORMAL && result.operationState() == OperationState.SUCCESS) ||
+				(result.inputState() == InputState.AFTER_UNARY && result.operationState() == OperationState.SUCCESS)) {
+			return success(result);
 		}
 		
-		if (result.inputState() == InputState.AFTER_UNARY && 
-				result.unaryPosition() == UnaryPositon.FIRST&&
-				result.operator() == ' ') {
+		if ((result.inputState() == InputState.AFTER_UNARY && result.unaryPosition() == UnaryPosition.FIRST &&
+				result.operationState() == OperationState.NORMAL) ||
+				(result.inputState() == InputState.NORMAL && result.unaryPosition() == UnaryPosition.FIRST &&
+				result.operationState() == OperationState.NORMAL)) {
+			
 			return getOperandString(result.unary(), formatNumber(result.operand()), result.unaryPosition());
 		}
 		
-		if (result.inputState() == InputState.NORMAL && result.operationState() == OperationState.SUCCESS) {
-			return unaryFirstText(result);
-		}
 		return "";
 	}
 	
-	private String unaryFirstText(NumberResult result) {
-		if (result.inputState() == InputState.AFTER_UNARY) {
-			if (result.unaryPosition() == UnaryPositon.FIRST) {
-				return getOperandString(result.unary(), formatNumber(result.operand()), result.unaryPosition()) +
-						" " + result.operator();
-			}
+	private String success(NumberResult result) {
+		if (result.unaryPosition() == UnaryPosition.FIRST) {
+			return getOperandString(result.unary(), formatNumber(result.operand()), result.unaryPosition()) +
+					" " + result.operator();
 		}
-		return formatNumber(result.num1()) + " " + result.operator();
+	return formatNumber(result.num1()) + " " + result.operator();
 	}
 	
 	private String numberHistoryText(NumberResult result) {
@@ -138,7 +150,7 @@ public class CalculatorFormatter{
 		return unary(ressult);
 	}
 	
-	private String getOperandString(Map<UnaryPositon, List<UnaryOperator>> unary, String operand, UnaryPositon num) {
+	private String getOperandString(Map<UnaryPosition, List<UnaryOperator>> unary, String operand, UnaryPosition num) {
 		String text = "";
 		for (var key : unary.entrySet()) {
 			if (key.getKey() == num) {
@@ -155,18 +167,18 @@ public class CalculatorFormatter{
 		return text;
 	}
 
-	private String unaryError(Map<UnaryPositon, List<UnaryOperator>> unary, String operand1, String operand2,
+	private String unaryError(Map<UnaryPosition, List<UnaryOperator>> unary, String operand1, String operand2,
 			char firstOperator, String num1) {
 		
-		if (unary.containsKey(UnaryPositon.FIRST) && !unary.containsKey(UnaryPositon.SECOND)) {
-			return getOperandString(unary, operand2, UnaryPositon.FIRST);
+		if (unary.containsKey(UnaryPosition.FIRST) && !unary.containsKey(UnaryPosition.SECOND)) {
+			return getOperandString(unary, operand2, UnaryPosition.FIRST);
 		}
-		if(!unary.containsKey(UnaryPositon.FIRST) && unary.containsKey(UnaryPositon.SECOND)){
-			return num1 + " " + firstOperator + " " + getOperandString(unary, operand2, UnaryPositon.SECOND);
+		if(!unary.containsKey(UnaryPosition.FIRST) && unary.containsKey(UnaryPosition.SECOND)){
+			return num1 + " " + firstOperator + " " + getOperandString(unary, operand2, UnaryPosition.SECOND);
 		}
-		return getOperandString(unary, operand2, UnaryPositon.FIRST)
+		return getOperandString(unary, operand2, UnaryPosition.FIRST)
 				+ " " + firstOperator + " " +
-				getOperandString(unary, operand2, UnaryPositon.SECOND);
+				getOperandString(unary, operand2, UnaryPosition.SECOND);
 	}
 	
 	private Presenter unary(CalculationResult result) {
@@ -191,7 +203,7 @@ public class CalculatorFormatter{
 		}
 		return result;
 	}
-	private String unaryProgressText(OperationState state, Map<UnaryPositon, List<UnaryOperator>> unary,
+	private String unaryProgressText(OperationState state, Map<UnaryPosition, List<UnaryOperator>> unary,
 			String operand1, String operand2, char firstOperator,
 			String num1) {
 		
@@ -202,13 +214,13 @@ public class CalculatorFormatter{
 			return  unaryError(unary, operand1, operand2,firstOperator, num1);
 		}
 
-		firstOperand = getOperandString(unary, operand1, UnaryPositon.FIRST);
-		secondOperand = getOperandString(unary, operand2, UnaryPositon.SECOND);
-		if (unary.containsKey(UnaryPositon.FIRST) && !unary.containsKey(UnaryPositon.SECOND)) {
+		firstOperand = getOperandString(unary, operand1, UnaryPosition.FIRST);
+		secondOperand = getOperandString(unary, operand2, UnaryPosition.SECOND);
+		if (unary.containsKey(UnaryPosition.FIRST) && !unary.containsKey(UnaryPosition.SECOND)) {
 			return firstOperand;
 		}		
 		
-		if (!unary.containsKey(UnaryPositon.FIRST) && unary.containsKey(UnaryPositon.SECOND)) {
+		if (!unary.containsKey(UnaryPosition.FIRST) && unary.containsKey(UnaryPosition.SECOND)) {
 			return num1 + " " + firstOperator + " " + secondOperand;
 		}
 		return firstOperand + " " + firstOperator + " " + secondOperand;
@@ -257,12 +269,12 @@ public class CalculatorFormatter{
 			text = formatNumber(result.result()) + " " + result.secondOperator();
 		}
 		
-		if (result.secondOperator() == ' ' && result.unaryPositon() == UnaryPositon.NONE){
+		if (result.secondOperator() == ' ' && result.unaryPosition() == UnaryPosition.NONE){
 			text = formatNumber(result.num1()) + " " + result.firstOperator();
 		}
 		
-		if(result.secondOperator() == ' ' && result.unaryPositon() == UnaryPositon.FIRST){
-			String firstOperand = getOperandString(result.unary(), formatNumber(result.operand1()), result.unaryPositon());
+		if(result.secondOperator() == ' ' && result.unaryPosition() == UnaryPosition.FIRST){
+			String firstOperand = getOperandString(result.unary(), formatNumber(result.operand1()), result.unaryPosition());
 			text = firstOperand + " " + result.firstOperator();
 		}
 		
@@ -271,7 +283,7 @@ public class CalculatorFormatter{
 	
 	private String operatorHistoryText(CalculationResult result) {
 		
-			if (result.unaryPositon() != UnaryPositon.NONE) {
+			if (result.unaryPosition() != UnaryPosition.NONE) {
 				return operationUnary(result);
 			}
 			return formatNumber(result.num1()) + " " + result.firstOperator() + " " + formatNumber(result.num2()) + " =";
@@ -281,14 +293,17 @@ public class CalculatorFormatter{
 
 		String firstOperand = "";
 		String secondOperand = "";
-		secondOperand = getOperandString(result.unary(), formatNumber(result.operand2()), UnaryPositon.SECOND);
-		firstOperand = getOperandString(result.unary(), formatNumber(result.operand1()), UnaryPositon.FIRST);
-		if (result.unaryPositon() == UnaryPositon.FIRST) {
+		secondOperand = getOperandString(result.unary(), formatNumber(result.operand2()), UnaryPosition.SECOND);
+		firstOperand = getOperandString(result.unary(), formatNumber(result.operand1()), UnaryPosition.FIRST);
+		
+		if (result.unary().containsKey(UnaryPosition.FIRST) &&
+				!result.unary().containsKey(UnaryPosition.SECOND)) {
 			
 			return firstOperand + " " + result.firstOperator() + " " + formatNumber(result.num2()) + " =";
 		}
 		
-		if (result.unaryPositon() == UnaryPositon.SECOND) {
+		if (!result.unary().containsKey(UnaryPosition.FIRST) &&
+				result.unary().containsKey(UnaryPosition.SECOND)) {
 			
 			return formatNumber(result.num1()) + " " + result.firstOperator() + " " + secondOperand + " =";
 		}

@@ -6,11 +6,11 @@ import java.util.Map;
 public record NumberResult (
 		String current,
 		double value,
-		Map<UnaryPositon, List<UnaryOperator>> unary,
+		Map<UnaryPosition, List<UnaryOperator>> unary,
 		double operand,
 		InputState inputState,
 		OperationState operationState,
-		UnaryPositon unaryPosition,
+		UnaryPosition unaryPosition,
 		HistoryState historyState,
 		double num1,
 		char operator
