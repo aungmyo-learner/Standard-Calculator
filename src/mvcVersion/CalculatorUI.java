@@ -130,9 +130,9 @@ public class CalculatorUI {
 		
 		decimal.setOnAction(e->current.setText(formatter.clickDecimal(current.getText())));
 		
-//		//Percentage Case
-//		percentage.setOnAction(e-> actionPercentage());
-//		
+		//Percentage Case
+		percentage.setOnAction(e-> actionPercentage());
+		
 		//Clear Case
 		c.setOnAction(e-> actionC());
 		ce.setOnAction(e->actionCE());
@@ -234,9 +234,6 @@ public class CalculatorUI {
 		progress.setText(presenter.progressText());
 	}
 	
-	public void actionPercentage() {
-		
-	}
 	// Operator case
 	private void actionOperator(char op) {
 		
@@ -257,6 +254,15 @@ public class CalculatorUI {
 		updateHistoryTrashButton();
 	}
 	
+	// percentage case
+	private void actionPercentage() {
+		PercentageResult result = service.clickPercentage(current.getText());
+		Presenter presenter = formatter.percentagePersenter(result);
+		current.setText(presenter.currentText());
+		progress.setText(presenter.progressText());
+		
+		updateHistoryTrashButton();
+	}
 	// equal case
 	private void actionEqual() {
 		EqualResult result = service.clickEqual(current.getText());
@@ -269,6 +275,7 @@ public class CalculatorUI {
 		}
 		progress.setText(presenter.progressText());
 		history.getItems().add(presenter.progressText() + "\n" + presenter.currentText());
+		updateHistoryTrashButton();
 	}
 	// clear case
 	private void actionCE() {

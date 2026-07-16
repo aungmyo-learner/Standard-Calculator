@@ -11,11 +11,6 @@ public class CalculatorFormatter{
         }
         return String.valueOf(num);
     }
-	public Presenter equalPresent(EqualResult result) {
-		String current = equalCurrentText(result);
-		String progress = equalProgressText(result);
-		return new Presenter(current, progress, "");
-	}
 
 	public String clickDecimal(String text) {
 		if (!text.contains(".")) {
@@ -32,6 +27,35 @@ public class CalculatorFormatter{
 		return text.substring(0, text.length() -1);
 	}
 
+	public Presenter percentagePersenter(PercentageResult result) {
+		String current = percentageCurrentText(result);
+		String progress = percentageProgressText(result);
+		String history = "";
+		
+		return new Presenter(current, progress, history);
+	}
+	
+	private String percentageCurrentText(PercentageResult result) {
+		return formatNumber(result.result());
+	}
+	
+	private String percentageProgressText(PercentageResult result) {
+		if (result.operator() == ' ') {
+			return formatNumber(result.result());
+		}
+		if (result.unaryPosition() == UnaryPosition.FIRST) {
+			return getOperandString(result.unary(), formatNumber(result.operand()), result.unaryPosition()) + " " +
+				result.operator() + " " + formatNumber(result.num2());
+		}
+		return formatNumber(result.num1()) + " " + result.operator() + " " + formatNumber(result.num2());
+	}
+	
+	public Presenter equalPresent(EqualResult result) {
+		String current = equalCurrentText(result);
+		String progress = equalProgressText(result);
+		return new Presenter(current, progress, "");
+	}
+	
 	private String equalCurrentText(EqualResult result) {
 
 		if (result.operationState() == OperationState.ERROR) {
@@ -41,7 +65,7 @@ public class CalculatorFormatter{
 			return formatNumber(result.num1());
 		}
 		if (result.operationState() == OperationState.SUCCESS) {
-			return formatNumber(result.reslt());
+			return formatNumber(result.result());
 		}
 		return formatNumber(result.num1());
 	}
@@ -59,8 +83,10 @@ public class CalculatorFormatter{
 				return result.current() + " =";
 		}
 		
-		return equalUnaryProgressText(result);
-		
+		if (!result.unary().isEmpty()) {
+			return equalUnaryProgressText(result);
+		}
+		return formatNumber(result.num1()) + " " + result.operator() + " " + formatNumber(result.num2()) + " =";
 	}
 	
 	private String equalUnaryProgressText(EqualResult result) {
@@ -100,7 +126,8 @@ public class CalculatorFormatter{
 		
 		if ((result.inputState() == InputState.AFTER_OPERATOR && result.operationState() == OperationState.SUCCESS) ||
 				(result.inputState() == InputState.NORMAL && result.operationState() == OperationState.SUCCESS) ||
-				(result.inputState() == InputState.AFTER_UNARY && result.operationState() == OperationState.SUCCESS)) {
+				(result.inputState() == InputState.AFTER_UNARY && result.operationState() == OperationState.SUCCESS)||
+				(result.inputState() == InputState.AFTER_PERCENTAGE && result.operationState() == OperationState.SUCCESS)) {
 			return success(result);
 		}
 		
@@ -133,16 +160,11 @@ public class CalculatorFormatter{
 	
 	private String numberCurrentText(NumberResult result) {
 		if (result.operationState() == OperationState.ERROR || result.current().equals("0")
-				|| result.inputState() == InputState.AFTER_UNARY || result.inputState() == InputState.AFTER_OPERATOR) {
+				|| result.inputState() == InputState.AFTER_UNARY || result.inputState() == InputState.AFTER_OPERATOR ||
+				result.inputState() == InputState.AFTER_PERCENTAGE || result.inputState() == InputState.AFTER_EQUAL) {
 			return formatNumber(result.value());
 		}
-//		
-//		if (result.inputState() == InputState.AFTER_OPERATOR && result.operationState() == OperationState.SUCCESS) {
-//			System.out.println("is after unary: " + result.unaryState());
-//			if (result.unaryState() == UnaryState.AFTER_UNARY) {
-//				return formatNumber(result.value());
-//			}
-//		}
+		
 		return result.current() + formatNumber(result.value());
 	}
 	
@@ -152,14 +174,18 @@ public class CalculatorFormatter{
 	
 	private String getOperandString(Map<UnaryPosition, List<UnaryOperator>> unary, String operand, UnaryPosition num) {
 		String text = "";
+		int count =-1;
 		for (var key : unary.entrySet()) {
 			if (key.getKey() == num) {
 				for (UnaryOperator symbol : key.getValue()) {
 					
 					if (text.isEmpty()) {
-						text = symbol.format(operand, key.getKey());
+						text = symbol.format(operand, count);
 					}else {
-						text = symbol.format(text, key.getKey());
+						text = symbol.format(text, count);
+					}
+					if (symbol != UnaryOperator.TOGGLE) {
+						count++;
 					}
 				}
 			}				
@@ -192,7 +218,6 @@ public class CalculatorFormatter{
 	}
 	
 	private String unaryCurrentText(OperationState state, UnaryOperator operator, String result) {
-		//System.out.println("is unary error: " + unaryError);
 		if (state == OperationState.ERROR) {
 			
 			if (operator == UnaryOperator.INVERSE) {

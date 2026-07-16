@@ -132,14 +132,15 @@ public class CalculatorModel {
 	public void clear() {
 		num1 =0;
 		num2 =0;
+		answer =0;
 		firstOperator = ' ';
 		secondOperator = ' ';
 		unary.clear();
 		operand1 = 0;
 		operand2 = 0;
-		inputState = InputState.NORMAL;
 		operationState = OperationState.NORMAL;
 		unaryPosition = UnaryPosition.NONE;
+		historyState = HistoryState.NONE;
 	}
 	
 	public void ifOperate() {

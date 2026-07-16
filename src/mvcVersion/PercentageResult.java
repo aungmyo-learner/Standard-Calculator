@@ -9,4 +9,7 @@ public record PercentageResult(
 		double num1,
 		double num2,
 		double result,
+		char operator,
+		double operand,
+		UnaryPosition unaryPosition,
 		Map<UnaryPosition, List<UnaryOperator>> unary) {}

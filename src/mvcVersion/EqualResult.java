@@ -14,5 +14,5 @@ public record EqualResult (
 		UnaryPosition unaryPositon,
 		double num1,
 		double num2,
-		double reslt
+		double result
 		){}
